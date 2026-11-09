@@ -123,6 +123,10 @@
   .stop .num{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
   .stop-name{background:none;border:0;padding:0;font-weight:700;font-size:17px;text-align:left}
   .stop .actions .small-btn{flex:1;padding:12px 6px}
+  .summary .due b{color:var(--red)}
+  .summary .ok b{color:var(--green)}
+  nav.tabs button .i{position:relative}
+  .tabdot{display:none;position:absolute;top:-4px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center}
   .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:24px;z-index:30;font-size:15px;max-width:90vw;text-align:center}
   .spinner{width:36px;height:36px;border:4px solid var(--green-l);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -197,7 +201,7 @@ function nextDateFor(day) {
   return isoDate(d);
 }
 const addressLine = c => [c.street + (c.apt ? `, ${c.apt}` : ""), c.city, `${c.state || ""} ${c.zip || ""}`.trim()].filter(Boolean).join(", ");
-const mapLink = c => "https://maps.google.com/?q=" + encodeURIComponent(addressLine(c));
+const mapLink = c => "https://maps.apple.com/?q=" + encodeURIComponent(addressLine(c));
 const can = (...roles) => roles.includes(me?.role);
 
 const ERR = {
@@ -396,6 +400,7 @@ function showSetup(msg) {
       me = { uid, ...profile };
       tab = ACCESS.admin[0];
       startData();
+      startPayReminder();
       showMain();
       toast("Administrador criado!");
     } catch (e) {
@@ -425,6 +430,8 @@ function startData() {
 function refresh() {
   if (tab === "vendas" && $("vl")) VIEWS[vsub].list($("vl"));
   if (tab === "entregas" && $("el")) drawEntregas();
+  if (tab === "contas" && $("cl")) drawContas();
+  updatePayBadge();
 }
 
 /* ===== Tela principal ===== */
@@ -438,11 +445,12 @@ function showMain() {
     </header>
     <main id="main"></main>
     ${tabs.length > 1 ? `<nav class="tabs">${tabs.map(t => `
-      <button data-t="${t}" class="${t === tab ? "on" : ""}"><span class="i">${TABS[t].icon}</span>${TABS[t].label}</button>`).join("")}
+      <button data-t="${t}" class="${t === tab ? "on" : ""}"><span class="i">${TABS[t].icon}${t === "contas" ? `<span class="tabdot" id="contas-dot"></span>` : ""}</span>${TABS[t].label}</button>`).join("")}
     </nav>` : ""}`;
   $("out").onclick = () => signOut(auth);
   document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; showMain(); });
   renderTab();
+  updatePayBadge();
 }
 
 function renderTab() {
@@ -451,6 +459,7 @@ function renderTab() {
   if (tab === "equipe") return renderTeam(main);
   if (tab === "vendas") return renderVendas(main);
   if (tab === "entregas") return renderEntregas(main);
+  if (tab === "contas") return renderContas(main);
   const t = TABS[tab];
   main.innerHTML = `<h2>${t.label}</h2>
     <div class="card soon"><div class="i">${t.icon}</div>
@@ -1192,7 +1201,7 @@ function drawEntregas() {
     ${pending.length ? `
       <button class="btn" id="eroute" style="margin-top:0">📍 ${hasRoute ? "Refazer rota pela minha localização" : "Organizar rota pela minha localização"}</button>
       ${hasRoute ? `<p class="note">Rota com ${pending.length} parada${pending.length > 1 ? "s" : ""}, cerca de ${Math.floor(totalMin / 60) ? Math.floor(totalMin / 60) + "h" : ""}${totalMin % 60}min contando 5 min por entrega. Distâncias aproximadas.</p>
-        <a class="btn ghost" id="egmaps" target="_blank" rel="noopener">🗺️ Abrir rota no Google Maps</a>` : ""}
+        <a class="btn ghost" id="egmaps" target="_blank" rel="noopener">🗺️ Rota completa no Google Maps</a>` : ""}
       <h4>Paradas</h4>
       <div class="list">${pending.map((o, i) => stopCard(o, i + 1, legs[o.id])).join("")}</div>` :
       `<div class="card soon"><div class="i">🎉</div><p><b>Todas as entregas desse dia foram feitas!</b></p></div>`}
@@ -1238,7 +1247,7 @@ function stopCard(o, n, leg) {
       </div>
     </div>
     <div class="actions">
-      <a class="small-btn ghost" style="text-align:center;text-decoration:none" href="https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(nav)}" target="_blank" rel="noopener">🧭 Ir</a>
+      <a class="small-btn ghost" style="text-align:center;text-decoration:none" href="https://maps.apple.com/?daddr=${encodeURIComponent(nav)}&dirflg=d" target="_blank" rel="noopener">🧭 Ir</a>
       ${o.clientPhone ? `<button class="small-btn ghost" data-av="${o.id}">💬 Avisar</button>` : ""}
       <button class="small-btn" data-bx="${o.id}">✅ Baixa</button>
     </div>
@@ -1391,6 +1400,191 @@ async function afterDelivery(o, mode, pay, photo) {
   };
 }
 
+/* ===== CONTAS ===== */
+let payFilter = "cobrar", payDate = "all", payTimer = null;
+const isDue = o => o.status === "entregue" && !o.paid;
+const tsDate = t => t?.toDate ? t.toDate() : null;
+function daysSince(t) {
+  const d = tsDate(t);
+  if (!d) return null;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+const canConfirm = () => can("admin", "contador");
+
+function renderContas(main) {
+  main.innerHTML = `<h2>Contas</h2><div id="ab"></div><div id="cl"></div>`;
+  drawContas();
+}
+
+function drawContas() {
+  const el = $("cl");
+  if (!el) return;
+  if (!data.loaded.orders) return el.innerHTML = loading;
+  const live = data.orders.filter(o => o.status !== "cancelada");
+  const dates = [...new Set(live.map(o => o.deliveryDate))].sort().reverse();
+  if (payDate !== "all" && !dates.includes(payDate)) payDate = "all";
+  const inDate = live.filter(o => payDate === "all" || o.deliveryDate === payDate);
+  const due = inDate.filter(isDue);
+  const paid = inDate.filter(o => o.paid);
+  const notYet = inDate.filter(o => o.status === "aberta" && !o.paid);
+  const sum = arr => arr.reduce((s, o) => s + (o.total || 0), 0);
+  const byMethod = {};
+  paid.forEach(o => { const m = o.paidMethod || o.paymentMethod || "outro"; byMethod[m] = (byMethod[m] || 0) + (o.total || 0); });
+  const list = payFilter === "cobrar" ? due : payFilter === "pagas" ? paid : payFilter === "abertas" ? notYet : inDate;
+  list.sort((a, b) => payFilter === "cobrar"
+    ? (tsDate(a.deliveredAt)?.getTime() || 0) - (tsDate(b.deliveredAt)?.getTime() || 0)
+    : (b.number || 0) - (a.number || 0));
+
+  const ab = $("ab");
+  if (ab) {
+    const showBanner = me.role === "contador" && "Notification" in window && Notification.permission === "default";
+    ab.innerHTML = showBanner ? `<div class="card" style="margin-bottom:12px;display:flex;gap:10px;align-items:center">
+      <div style="flex:1;font-size:15px">🔔 Ative os avisos pra receber o lembrete de cobrança de hora em hora.</div>
+      <button class="small-btn" id="anot">Ativar</button></div>` : "";
+    const an = $("anot");
+    if (an) an.onclick = async () => { try { await Notification.requestPermission(); } catch {} drawContas(); };
+  }
+
+  el.innerHTML = `
+    <div class="chips">
+      <button class="chip ${payDate === "all" ? "on" : ""}" data-pd="all">Todas as datas</button>
+      ${dates.map(d => `<button class="chip ${d === payDate ? "on" : ""}" data-pd="${d}">${fmtDate(d)}</button>`).join("")}
+    </div>
+    <div class="summary">
+      <div class="due"><small>A cobrar</small><b>${money(sum(due))}</b><small>${due.length} ordem${due.length === 1 ? "" : "s"}</small></div>
+      <div class="ok"><small>Recebido</small><b>${money(sum(paid))}</b><small>${paid.length} ordem${paid.length === 1 ? "" : "s"}</small></div>
+    </div>
+    ${paid.length ? `<p class="note" style="margin:-4px 0 12px">Recebido por forma: ${Object.entries(byMethod).map(([m, v]) => `${esc(PAY[m] || m)} ${money(v)}`).join(" · ")}</p>` : ""}
+    <div class="chips">
+      <button class="chip ${payFilter === "cobrar" ? "on" : ""}" data-pf="cobrar">🔴 A cobrar (${due.length})</button>
+      <button class="chip ${payFilter === "pagas" ? "on" : ""}" data-pf="pagas">🟢 Pagas (${paid.length})</button>
+      <button class="chip ${payFilter === "abertas" ? "on" : ""}" data-pf="abertas">⏳ Não entregues (${notYet.length})</button>
+      <button class="chip ${payFilter === "todas" ? "on" : ""}" data-pf="todas">Todas</button>
+    </div>
+    <div class="list">${list.map(payCard).join("") || `<div class="empty">${payFilter === "cobrar" ? "Nada pra cobrar. Tudo em dia! 🎉" : "Nenhuma ordem aqui."}</div>`}</div>
+    <button class="btn ghost" id="prep">📄 Baixar relatório${payDate === "all" ? "" : " de " + fmtDate(payDate)}</button>`;
+
+  el.querySelectorAll("[data-pd]").forEach(b => b.onclick = () => { payDate = b.dataset.pd; drawContas(); });
+  el.querySelectorAll("[data-pf]").forEach(b => b.onclick = () => { payFilter = b.dataset.pf; drawContas(); });
+  el.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => paySheet(data.orders.find(o => o.id === b.dataset.pay)));
+  $("prep").onclick = () => downloadReport(inDate);
+}
+
+function payCard(o) {
+  const days = isDue(o) ? daysSince(o.deliveredAt) : null;
+  const color = o.paid ? "var(--green)" : "var(--red)";
+  const reported = o.paymentMethod ? PAY[o.paymentMethod] || o.paymentMethod : "";
+  return `<button class="item" data-pay="${o.id}" style="border-left:6px solid ${color};display:block">
+    <div style="display:flex;justify-content:space-between;gap:10px"><b>#${o.number} · ${esc(o.clientName)}</b><b style="color:${color}">${money(o.total)}</b></div>
+    <small style="color:var(--muted)">${fmtDate(o.deliveryDate)} · ${esc(o.regionName || "Sem região")}${o.deliveredBy ? " · " + esc(o.deliveredBy) : ""}</small>
+    <div class="tags">
+      <span class="badge ${o.paid ? "" : "red"}">${o.paid ? "Pago" + (o.paidMethod ? " · " + esc(PAY[o.paidMethod] || o.paidMethod) : "") : "Não pago"}</span>
+      ${!o.paid && reported ? `<span class="badge amber">Entregador: ${esc(reported)}</span>` : ""}
+      ${o.status === "aberta" ? `<span class="badge gray">Não entregue</span>` : ""}
+      ${days != null && days >= 1 ? `<span class="badge red">${days} dia${days > 1 ? "s" : ""}</span>` : ""}
+      ${o.chargedAt ? `<span class="badge gray">Cobrado</span>` : ""}
+    </div>
+  </button>`;
+}
+
+function chargeText(o) {
+  const p = payLines();
+  return `Olá, ${firstName(o.clientName)}! Aqui é ${biz()}.\n` +
+    `Passando pra lembrar do pagamento do pedido #${o.number}, entregue ${fmtDateLong(o.deliveryDate)}.\n` +
+    `*Valor: ${money(o.total)}*\n` +
+    (p.length ? `\nVocê pode pagar por:\n${p.join("\n")}\n` : "") +
+    `\nSe já pagou, por favor desconsidere. Obrigado!`;
+}
+
+function paySheet(o) {
+  if (!o) return;
+  const reported = o.paymentMethod && o.paymentMethod !== "pendente" ? o.paymentMethod : "";
+  const ov = openSheet(`
+    <div class="row" style="margin-bottom:4px"><h3>#${o.number} · ${esc(o.clientName)}</h3></div>
+    <div class="msg ${o.paid ? "ok" : "err"}" style="font-weight:700;font-size:17px;text-align:center">${o.paid ? "🟢 Pago" : "🔴 Não pago"} · ${money(o.total)}</div>
+    <div class="sheet-msg"></div>
+    <div class="kv"><span>Entrega</span><b>${fmtDate(o.deliveryDate)} · ${o.status === "entregue" ? "Entregue" : o.status === "aberta" ? "Ainda não entregue" : "Cancelada"}</b></div>
+    ${o.deliveredBy ? `<div class="kv"><span>Entregador</span><b>${esc(o.deliveredBy)}</b></div>` : ""}
+    ${o.paymentMethod ? `<div class="kv"><span>Entregador informou</span><b>${esc(PAY[o.paymentMethod] || o.paymentMethod)}</b></div>` : ""}
+    <div class="kv"><span>Vendedor</span><b>${esc(o.sellerName || "—")}</b></div>
+    ${o.paid ? `<div class="kv"><span>Confirmado por</span><b>${esc(o.paidConfirmedBy || "—")}${tsDate(o.paidAt) ? " · " + tsDate(o.paidAt).toLocaleDateString("pt-BR") : ""}</b></div>` : ""}
+    ${!o.paid && canConfirm() ? `
+      <label>Recebido por</label>
+      <div class="opts">
+        ${["cash", "zelle", "venmo"].map(k => `<label class="opt"><input type="radio" name="pm" value="${k}" ${reported === k ? "checked" : ""}><span>${k === "cash" ? "💵" : k === "zelle" ? "🏦" : "📱"} ${PAY[k]}</span></label>`).join("")}
+      </div>
+      <p class="note">Confira no banco, no Zelle ou no Venmo antes de confirmar.</p>
+      <button class="btn" id="pconf">✅ Confirmar pagamento</button>` : ""}
+    ${!o.paid && o.clientPhone ? `<a class="btn ghost" id="pchg" href="${waLink(o.clientPhone, chargeText(o))}" target="_blank" rel="noopener">💬 Cobrar no WhatsApp</a>` : ""}
+    <button class="btn ghost" id="pdet">Ver ordem completa</button>
+    ${o.paid && canConfirm() ? `<button class="btn danger" id="pundo">Desfazer confirmação</button>` : ""}
+    <button type="button" class="link" data-close>Fechar</button>`);
+
+  const cf = $("pconf");
+  if (cf) cf.onclick = async () => {
+    const m = ov.querySelector("input[name=pm]:checked")?.value;
+    if (!m) return sheetError(ov, "Escolha como o pagamento foi recebido.");
+    setBusy(cf, true, "Confirmando...");
+    try {
+      await updateDoc(doc(db, "orders", o.id), { paid: true, paidMethod: m, paidConfirmedBy: me.name, paidConfirmedById: me.uid, paidAt: serverTimestamp() });
+      closeSheet();
+      toast(`#${o.number} confirmada como paga.`);
+    } catch (e) { setBusy(cf, false); sheetError(ov, errMsg(e)); }
+  };
+  const ch = $("pchg");
+  if (ch) ch.onclick = () => { updateDoc(doc(db, "orders", o.id), { chargedAt: serverTimestamp(), chargedBy: me.name }).catch(() => {}); };
+  $("pdet").onclick = () => orderDetail(o);
+  const un = $("pundo");
+  if (un) un.onclick = async () => {
+    if (!confirm(`Voltar a ordem #${o.number} para "não paga"?`)) return;
+    try {
+      await updateDoc(doc(db, "orders", o.id), { paid: false, paidMethod: "", paidConfirmedBy: "", undoneBy: me.name, undoneAt: serverTimestamp() });
+      closeSheet(); toast("Confirmação desfeita.");
+    } catch (e) { sheetError(ov, errMsg(e)); }
+  };
+}
+
+function downloadReport(orders) {
+  const q = s => `"${String(s ?? "").replace(/"/g, '""')}"`;
+  const head = ["Ordem", "Data entrega", "Cliente", "Telefone", "Região", "Vendedor", "Entregador", "Status", "Total", "Pago", "Forma de pagamento", "Confirmado por"];
+  const rows = [...orders].sort((a, b) => (a.number || 0) - (b.number || 0)).map(o => [
+    o.number, o.deliveryDate, o.clientName, o.clientPhone, o.regionName, o.sellerName, o.deliveredBy || "",
+    STATUS[o.status]?.[0] || o.status, (o.total || 0).toFixed(2), o.paid ? "Sim" : "Não",
+    PAY[o.paidMethod || o.paymentMethod] || "", o.paidConfirmedBy || ""
+  ].map(q).join(","));
+  const csv = "﻿" + head.map(q).join(",") + "\n" + rows.join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `contas-${payDate === "all" ? today() : payDate}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+// Contador da aba e lembrete de hora em hora (enquanto o app estiver aberto)
+function updatePayBadge() {
+  const dot = $("contas-dot");
+  if (!dot) return;
+  const n = data.orders.filter(isDue).length;
+  dot.textContent = n > 99 ? "99+" : n;
+  dot.style.display = n && can("admin", "contador") ? "inline-block" : "none";
+}
+function startPayReminder() {
+  stopPayReminder();
+  if (me?.role !== "contador") return;
+  const check = () => {
+    const due = data.orders.filter(isDue);
+    if (!due.length) return;
+    const total = due.reduce((s, o) => s + (o.total || 0), 0);
+    const msg = `${due.length} ordem${due.length > 1 ? "s" : ""} entregue${due.length > 1 ? "s" : ""} sem pagamento confirmado (${money(total)}).`;
+    try {
+      if ("Notification" in window && Notification.permission === "granted") new Notification("Delivery Farm · Cobranças", { body: msg });
+      else toast(msg);
+    } catch { toast(msg); }
+  };
+  setTimeout(check, 8000);
+  payTimer = setInterval(check, 60 * 60 * 1000);
+}
+function stopPayReminder() { if (payTimer) clearInterval(payTimer); payTimer = null; }
+
 /* ===== Equipe (só administrador) ===== */
 function renderTeam(main) {
   main.innerHTML = `<div class="row"><h2>Equipe</h2><button class="small-btn" id="add">+ Novo usuário</button></div>
@@ -1489,6 +1683,7 @@ onAuthStateChanged(auth, async user => {
     me = null;
     if (unsubUsers) { unsubUsers(); unsubUsers = null; }
     stopData();
+    stopPayReminder();
     closeSheet();
     return showStart();
   }
@@ -1501,6 +1696,7 @@ onAuthStateChanged(auth, async user => {
     me = { uid: user.uid, ...snap.data() };
     tab = (ACCESS[me.role] || [])[0];
     startData();
+    startPayReminder();
     showMain();
   } catch (e) {
     showLogin(errMsg(e));
