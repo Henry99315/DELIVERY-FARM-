@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Delivery Farm</title>
 <style>
-  :root{--green:#1f6f43;--green-d:#165233;--green-l:#e8f3ec;--red:#c0392b;--red-l:#fbeaea;--bg:#f6f5f1;--card:#fff;--text:#1d1d1b;--muted:#6b6b66;--line:#e3e1da}
+  :root{--green:#1f6f43;--green-d:#165233;--green-l:#e8f3ec;--red:#c0392b;--red-l:#fbeaea;--amber:#9a6700;--amber-l:#fff4d6;--bg:#f6f5f1;--card:#fff;--text:#1d1d1b;--muted:#6b6b66;--line:#e3e1da}
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:16px;-webkit-tap-highlight-color:transparent}
@@ -19,16 +19,19 @@
   .brand p{margin:0;color:var(--muted)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
   label{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}
-  input,select{width:100%;font-size:16px;padding:13px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--text)}
-  input:focus,select:focus{outline:2px solid var(--green);border-color:transparent}
+  input,select,textarea{width:100%;font:inherit;font-size:16px;padding:13px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--text)}
+  textarea{min-height:70px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--green);border-color:transparent}
   .phone{display:flex;gap:8px}
   .phone select{width:110px;flex:none}
-  button{font:inherit;cursor:pointer}
-  .btn{display:block;width:100%;padding:15px;border:0;border-radius:12px;background:var(--green);color:#fff;font-size:17px;font-weight:700;margin-top:20px}
+  .two{display:flex;gap:8px}
+  .two>div{flex:1;min-width:0}
+  button{font:inherit;cursor:pointer;color:inherit}
+  .btn{display:block;width:100%;padding:15px;border:0;border-radius:12px;background:var(--green);color:#fff;font-size:17px;font-weight:700;margin-top:20px;text-align:center;text-decoration:none}
   .btn:active{background:var(--green-d)}
   .btn:disabled{opacity:.6}
   .btn.ghost{background:transparent;color:var(--green);border:1px solid var(--green);margin-top:10px}
-  .btn.danger{background:var(--red)}
+  .btn.danger{background:transparent;color:var(--red);border:1px solid var(--red);margin-top:10px}
   .link{background:none;border:0;color:var(--green);font-weight:600;padding:12px 0;width:100%;text-align:center}
   .msg{padding:12px;border-radius:10px;margin-bottom:12px;font-size:15px}
   .msg.err{background:var(--red-l);color:var(--red)}
@@ -44,27 +47,76 @@
   nav.tabs button .i{display:block;font-size:22px;margin-bottom:2px}
   nav.tabs button.on{color:var(--green)}
   h2{font-size:21px;margin:4px 0 14px}
+  h4{margin:22px 0 8px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
   .soon{text-align:center;padding:36px 18px}
   .soon .i{font-size:46px}
   .soon p{color:var(--muted)}
   .list{display:flex;flex-direction:column;gap:10px}
-  .user{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:left;width:100%}
-  .avatar{width:42px;height:42px;border-radius:50%;background:var(--green-l);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
-  .user .info{flex:1;min-width:0}
-  .user .info b{display:block}
-  .user .info small{color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .badge{font-size:12px;font-weight:700;padding:4px 8px;border-radius:20px;background:var(--green-l);color:var(--green-d);white-space:nowrap}
-  .badge.off{background:var(--red-l);color:var(--red)}
+  .item{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:left;width:100%}
+  .avatar{width:44px;height:44px;border-radius:50%;background:var(--green-l);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;overflow:hidden}
+  .thumb{width:52px;height:52px;border-radius:10px;background:var(--green-l);flex:none;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:24px}
+  .item .info{flex:1;min-width:0}
+  .item .info b{display:block}
+  .item .info small{color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .right{text-align:right;flex:none}
+  .item .right b{display:block}
+  .badge{font-size:12px;font-weight:700;padding:4px 8px;border-radius:20px;background:var(--green-l);color:var(--green-d);white-space:nowrap;display:inline-block}
+  .badge.off,.badge.red{background:var(--red-l);color:var(--red)}
+  .badge.amber{background:var(--amber-l);color:var(--amber)}
+  .badge.gray{background:#eee;color:#666}
+  .tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
   .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
   .row h2{margin:0}
-  .small-btn{background:var(--green);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700}
+  .small-btn{background:var(--green);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700;white-space:nowrap}
+  .small-btn.ghost{background:#fff;color:var(--green);border:1px solid var(--green)}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;border:1px solid var(--line);background:#fff;border-radius:20px;padding:9px 14px;font-size:14px;font-weight:600;color:var(--muted)}
+  .chip.on{background:var(--green);border-color:var(--green);color:#fff}
+  .summary{display:flex;gap:10px;margin-bottom:12px}
+  .summary div{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .summary small{display:block;color:var(--muted);font-size:12px}
+  .summary b{font-size:18px}
+  .search{margin-bottom:12px}
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
-  .sheet{background:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+  .sheet{background:#fff;width:100%;max-width:560px;max-height:94vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
   .sheet h3{margin:0 0 4px;font-size:20px}
   .switch{display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-weight:600}
   .switch input{width:24px;height:24px}
+  .photo-pick{display:flex;align-items:center;gap:12px}
+  .photo-pick img{width:96px;height:96px;object-fit:cover;border-radius:12px;background:var(--green-l)}
+  .photo-pick .ph{width:96px;height:96px;border-radius:12px;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:34px;flex:none}
+  .photo-btn{display:inline-block;margin:0;background:#fff;color:var(--green);border:1px solid var(--green);border-radius:10px;padding:10px 14px;font-weight:700;font-size:15px;cursor:pointer}
+  .big-photo{width:100%;max-height:320px;object-fit:cover;border-radius:12px;margin-top:10px}
+  .prod{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .prod:last-child{border-bottom:0}
+  .prod .info{flex:1;min-width:0}
+  .prod .info small{color:var(--muted);display:block}
+  .stepper{display:flex;align-items:center;gap:6px;flex:none}
+  .stepper button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:20px;font-weight:700;color:var(--green)}
+  .stepper input{width:52px;text-align:center;padding:8px 4px}
+  .stepper.has input{border-color:var(--green);font-weight:700}
+  .picked{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--green-l);border-radius:12px;padding:12px}
+  .picked small{display:block;color:var(--muted)}
+  .results{border:1px solid var(--line);border-radius:12px;margin-top:8px;overflow:hidden}
+  .results button{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid var(--line);padding:12px}
+  .results button:last-child{border-bottom:0}
+  .results small{color:var(--muted);display:block}
+  .totalbar{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom));background:#fff;margin:16px -16px calc(-18px - env(safe-area-inset-bottom));padding:12px 16px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+  .totalbar .row{margin:0}
+  .totalbar .btn{margin-top:10px}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{padding:12px;text-align:left;border-bottom:1px solid var(--line)}
+  th{font-size:13px;color:var(--muted);background:#faf9f6}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:0}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .kv span{color:var(--muted)}
+  .actions{display:flex;gap:8px;margin-top:10px}
+  .actions a,.actions button{flex:1}
+  .empty{text-align:center;color:var(--muted);padding:30px 10px}
   .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:24px;z-index:30;font-size:15px;max-width:90vw;text-align:center}
-  .spinner{width:36px;height:36px;border:4px solid var(--green-l);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
+  .spinner{width:36px;height:36px;border:4px solid var(--green-l);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
   @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
@@ -74,7 +126,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, collection, onSnapshot, writeBatch, runTransaction, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 /* ===== Configuração do Firebase ===== */
 const firebaseConfig = {
@@ -96,7 +148,7 @@ const secAuth = getAuth(initializeApp(firebaseConfig, "secondary"));
 /* ===== Perfis e abas ===== */
 const ROLES = { admin: "Administrador", vendedor: "Vendedor", entregador: "Entregador", contador: "Contador" };
 const TABS = {
-  vendas:   { label: "Vendas",   icon: "🛒", desc: "Lançamento de ordens, cadastro de clientes e produtos com estoque, e a lista de separação por dia." },
+  vendas:   { label: "Vendas",   icon: "🛒" },
   entregas: { label: "Entregas", icon: "🚚", desc: "Rota do dia pela localização do celular, baixa da entrega com foto e mensagens pelo WhatsApp." },
   contas:   { label: "Contas",   icon: "💵", desc: "Ordens em verde (pagas) e vermelho (pendentes), e confirmação de pagamentos em cash, Zelle e Venmo." },
   equipe:   { label: "Equipe",   icon: "👥" }
@@ -107,14 +159,38 @@ const ACCESS = {
   entregador: ["entregas"],
   contador: ["contas"]
 };
+const DAYS = { sab: { label: "Sábado", idx: 6 }, dom: { label: "Domingo", idx: 0 } };
+const STATUS = { aberta: ["Aberta", "amber"], entregue: ["Entregue", ""], cancelada: ["Cancelada", "gray"] };
 
 /* ===== Utilidades ===== */
 const $app = document.getElementById("app");
 let me = null, tab = null, settingUp = false, unsubUsers = null, users = [];
+let data = { products: [], clients: [], regions: [], orders: [], settings: {}, loaded: {} };
+let dataUnsubs = [];
+let vsub = "ordens", clientSearch = "", orderDate = null, sepDate = null;
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const val = id => document.getElementById(id).value.trim();
+const $ = id => document.getElementById(id);
+const val = id => $(id).value.trim();
 const initials = n => (n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
+const byName = (a, b) => (a.name || "").localeCompare(b.name || "");
+const money = n => "$" + (Number(n) || 0).toFixed(2);
+const pad = n => String(n).padStart(2, "0");
+const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const parseISO = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const DOW = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+const fmtDate = s => { if (!s) return ""; const d = parseISO(s); return `${DOW[d.getDay()]}, ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`; };
+const today = () => isoDate(new Date());
+function nextDateFor(day) {
+  const idx = DAYS[day]?.idx ?? 6;
+  const d = new Date();
+  while (d.getDay() !== idx) d.setDate(d.getDate() + 1);
+  return isoDate(d);
+}
+const addressLine = c => [c.street + (c.apt ? `, ${c.apt}` : ""), c.city, `${c.state || ""} ${c.zip || ""}`.trim()].filter(Boolean).join(", ");
+const mapLink = c => "https://maps.google.com/?q=" + encodeURIComponent(addressLine(c));
+const can = (...roles) => roles.includes(me?.role);
 
 const ERR = {
   "auth/invalid-credential": "E-mail ou senha incorretos.",
@@ -127,7 +203,7 @@ const ERR = {
   "auth/too-many-requests": "Muitas tentativas. Espere um pouco e tente de novo.",
   "auth/network-request-failed": "Sem conexão com a internet.",
   "auth/operation-not-allowed": "Ative o login por e-mail e senha no Firebase (Authentication).",
-  "permission-denied": "Sem permissão. Confira se as regras do Firestore foram publicadas.",
+  "permission-denied": "Sem permissão. Confira se as regras novas do Firestore foram publicadas.",
   "unavailable": "Sem conexão com o banco de dados. Verifique a internet."
 };
 const errMsg = e => ERR[e?.code] || e?.message || "Erro inesperado.";
@@ -151,8 +227,8 @@ function phoneFields(id, value = "") {
   </div>`;
 }
 function readPhone(id) {
-  const n = document.getElementById(id + "-num").value.replace(/\D/g, "");
-  return n ? document.getElementById(id + "-cc").value + n : "";
+  const n = $(id + "-num").value.replace(/\D/g, "");
+  return n ? $(id + "-cc").value + n : "";
 }
 function prettyPhone(p = "") {
   const m1 = p.match(/^\+1(\d{3})(\d{3})(\d{4})$/);
@@ -167,19 +243,72 @@ function setBusy(btn, busy, text) {
   else if (btn.dataset.t) btn.textContent = btn.dataset.t;
 }
 
-/* ===== Telas de entrada ===== */
-function showLoading() {
-  $app.innerHTML = `<div class="center"><div class="spinner"></div></div>`;
+// Reduz a foto antes de salvar (fica leve e cabe no banco de dados)
+function compressImage(file, max = 800, q = 0.65) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL("image/jpeg", q));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("Não consegui abrir essa foto.")); };
+    img.src = url;
+  });
 }
+function photoPicker(id, current, icon) {
+  return `<div class="photo-pick">
+    ${current ? `<img id="${id}-img" src="${current}" alt="">` : `<div class="ph" id="${id}-img">${icon}</div>`}
+    <div><label class="photo-btn" for="${id}-file">📷 Tirar ou escolher foto</label>
+    <input id="${id}-file" type="file" accept="image/*" hidden></div>
+  </div>`;
+}
+function wirePhoto(id, max, q, onPhoto) {
+  $(id + "-file").onchange = async ev => {
+    const f = ev.target.files[0];
+    if (!f) return;
+    try {
+      const dataUrl = await compressImage(f, max, q);
+      onPhoto(dataUrl);
+      const old = $(id + "-img");
+      const img = document.createElement("img");
+      img.id = id + "-img"; img.src = dataUrl; img.alt = "";
+      old.replaceWith(img);
+    } catch (e) { toast(errMsg(e)); }
+  };
+}
+
+/* ===== Folhas (janelas que sobem de baixo) ===== */
+function closeSheet() { document.querySelector(".overlay")?.remove(); }
+function openSheet(html) {
+  closeSheet();
+  const ov = document.createElement("div");
+  ov.className = "overlay";
+  ov.innerHTML = `<div class="sheet">${html}</div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if (e.target === ov) closeSheet(); };
+  ov.querySelectorAll("[data-close]").forEach(b => b.onclick = closeSheet);
+  return ov;
+}
+function sheetError(ov, m) {
+  const box = ov.querySelector(".sheet-msg");
+  if (box) box.innerHTML = `<div class="msg err">${esc(m)}</div>`;
+  ov.querySelector(".sheet").scrollTop = 0;
+}
+
+/* ===== Telas de entrada ===== */
+function showLoading() { $app.innerHTML = `<div class="center"><div class="spinner"></div></div>`; }
 
 async function showStart(msg) {
   showLoading();
   try {
     const setup = await getDoc(doc(db, "config", "setup"));
     if (setup.exists()) showLogin(msg); else showSetup();
-  } catch (e) {
-    showLogin(msg || errMsg(e));
-  }
+  } catch (e) { showLogin(msg || errMsg(e)); }
 }
 
 function brand(sub) {
@@ -199,14 +328,14 @@ function showLogin(msg, ok) {
       <button type="button" class="link" id="forgot">Esqueci a senha</button>
     </form>
   </div></div>`;
-  document.getElementById("f").onsubmit = async ev => {
+  $("f").onsubmit = async ev => {
     ev.preventDefault();
-    const b = document.getElementById("go");
+    const b = $("go");
     setBusy(b, true, "Entrando...");
-    try { await signInWithEmailAndPassword(auth, val("email"), document.getElementById("pw").value); }
+    try { await signInWithEmailAndPassword(auth, val("email"), $("pw").value); }
     catch (e) { setBusy(b, false); showLogin(errMsg(e)); }
   };
-  document.getElementById("forgot").onclick = async () => {
+  $("forgot").onclick = async () => {
     const email = val("email");
     if (!email) return showLogin("Digite seu e-mail acima e toque em \"Esqueci a senha\" de novo.");
     try { await sendPasswordResetEmail(auth, email); showLogin("Enviamos um e-mail para você criar uma nova senha.", true); }
@@ -233,13 +362,13 @@ function showSetup(msg) {
       <button class="btn" id="go">Criar administrador</button>
     </form>
   </div></div>`;
-  document.getElementById("f").onsubmit = async ev => {
+  $("f").onsubmit = async ev => {
     ev.preventDefault();
     const name = val("name"), email = val("email"), phone = readPhone("phone");
-    const pw = document.getElementById("pw").value, pw2 = document.getElementById("pw2").value;
+    const pw = $("pw").value, pw2 = $("pw2").value;
     if (!phone) return showSetup("Digite o telefone.");
     if (pw !== pw2) return showSetup("As senhas não são iguais.");
-    const b = document.getElementById("go");
+    const b = $("go");
     setBusy(b, true, "Criando...");
     settingUp = true;
     try {
@@ -258,6 +387,7 @@ function showSetup(msg) {
       settingUp = false;
       me = { uid, ...profile };
       tab = ACCESS.admin[0];
+      startData();
       showMain();
       toast("Administrador criado!");
     } catch (e) {
@@ -266,6 +396,26 @@ function showSetup(msg) {
       showSetup(errMsg(e));
     }
   };
+}
+
+/* ===== Dados em tempo real ===== */
+function stopData() { dataUnsubs.forEach(u => u()); dataUnsubs = []; data = { products: [], clients: [], regions: [], orders: [], settings: {}, loaded: {} }; }
+function startData() {
+  stopData();
+  const onErr = e => toast(errMsg(e));
+  const mark = k => { data.loaded[k] = true; refresh(); };
+  dataUnsubs.push(onSnapshot(collection(db, "products"), s => { data.products = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(byName); mark("products"); }, onErr));
+  dataUnsubs.push(onSnapshot(collection(db, "clients"), s => { data.clients = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(byName); mark("clients"); }, onErr));
+  dataUnsubs.push(onSnapshot(collection(db, "regions"), s => { data.regions = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(byName); mark("regions"); }, onErr));
+  dataUnsubs.push(onSnapshot(doc(db, "config", "settings"), s => { data.settings = s.exists() ? s.data() : {}; mark("settings"); }, onErr));
+  const from = isoDate(addDays(new Date(), -45));
+  dataUnsubs.push(onSnapshot(query(collection(db, "orders"), where("deliveryDate", ">=", from)), s => {
+    data.orders = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.number || 0) - (a.number || 0));
+    mark("orders");
+  }, onErr));
+}
+function refresh() {
+  if (tab === "vendas" && $("vl")) VIEWS[vsub].list($("vl"));
 }
 
 /* ===== Tela principal ===== */
@@ -281,15 +431,16 @@ function showMain() {
     ${tabs.length > 1 ? `<nav class="tabs">${tabs.map(t => `
       <button data-t="${t}" class="${t === tab ? "on" : ""}"><span class="i">${TABS[t].icon}</span>${TABS[t].label}</button>`).join("")}
     </nav>` : ""}`;
-  document.getElementById("out").onclick = () => signOut(auth);
+  $("out").onclick = () => signOut(auth);
   document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; showMain(); });
   renderTab();
 }
 
 function renderTab() {
-  const main = document.getElementById("main");
+  const main = $("main");
   if (unsubUsers && tab !== "equipe") { unsubUsers(); unsubUsers = null; }
   if (tab === "equipe") return renderTeam(main);
+  if (tab === "vendas") return renderVendas(main);
   const t = TABS[tab];
   main.innerHTML = `<h2>${t.label}</h2>
     <div class="card soon"><div class="i">${t.icon}</div>
@@ -298,42 +449,546 @@ function renderTab() {
     </div>`;
 }
 
+/* ===== VENDAS ===== */
+const SUBS = [
+  ["ordens", "Ordens"], ["clientes", "Clientes"], ["produtos", "Produtos"], ["separacao", "Separação"], ["ajustes", "Ajustes", "admin"]
+];
+function renderVendas(main) {
+  const subs = SUBS.filter(s => !s[2] || can(s[2]));
+  if (!subs.find(s => s[0] === vsub)) vsub = "ordens";
+  main.innerHTML = `<div class="chips">${subs.map(s => `<button class="chip ${s[0] === vsub ? "on" : ""}" data-s="${s[0]}">${s[1]}</button>`).join("")}</div><div id="vc"></div>`;
+  main.querySelectorAll(".chip[data-s]").forEach(b => b.onclick = () => { vsub = b.dataset.s; renderVendas(main); });
+  VIEWS[vsub].mount($("vc"));
+  VIEWS[vsub].list($("vl"));
+}
+const loading = `<div class="spinner"></div>`;
+
+const VIEWS = {
+  /* ----- Ordens ----- */
+  ordens: {
+    mount(el) {
+      el.innerHTML = `<div class="row"><h2>Ordens</h2><button class="small-btn" id="no">+ Nova ordem</button></div><div id="vl"></div>`;
+      $("no").onclick = () => orderSheet();
+    },
+    list(el) {
+      if (!data.loaded.orders) return el.innerHTML = loading;
+      const dates = [...new Set(data.orders.map(o => o.deliveryDate))].sort();
+      const t = today();
+      if (orderDate !== "all" && !dates.includes(orderDate)) orderDate = dates.find(d => d >= t) || dates[dates.length - 1] || "all";
+      const list = data.orders.filter(o => orderDate === "all" || o.deliveryDate === orderDate);
+      const live = list.filter(o => o.status !== "cancelada");
+      el.innerHTML = `
+        ${dates.length ? `<div class="chips">
+          ${dates.map(d => `<button class="chip ${d === orderDate ? "on" : ""}" data-d="${d}">${fmtDate(d)}</button>`).join("")}
+          <button class="chip ${orderDate === "all" ? "on" : ""}" data-d="all">Todas</button>
+        </div>` : ""}
+        <div class="summary">
+          <div><small>Ordens</small><b>${live.length}</b></div>
+          <div><small>Total</small><b>${money(live.reduce((s, o) => s + (o.total || 0), 0))}</b></div>
+          <div><small>Não pagas</small><b>${live.filter(o => !o.paid).length}</b></div>
+        </div>
+        <div class="list">${list.map(orderCard).join("") || `<div class="empty">Nenhuma ordem ainda. Toque em "+ Nova ordem".</div>`}</div>`;
+      el.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { orderDate = b.dataset.d; this.list(el); });
+      el.querySelectorAll("[data-o]").forEach(b => b.onclick = () => orderDetail(data.orders.find(o => o.id === b.dataset.o)));
+    }
+  },
+
+  /* ----- Clientes ----- */
+  clientes: {
+    mount(el) {
+      el.innerHTML = `<div class="row"><h2>Clientes</h2><button class="small-btn" id="nc">+ Novo cliente</button></div>
+        <input class="search" id="cs" type="search" placeholder="Buscar por nome, telefone ou cidade" value="${esc(clientSearch)}">
+        <div id="vl"></div>`;
+      $("nc").onclick = () => clientSheet();
+      $("cs").oninput = e => { clientSearch = e.target.value; this.list($("vl")); };
+    },
+    list(el) {
+      if (!data.loaded.clients) return el.innerHTML = loading;
+      const q = clientSearch.trim().toLowerCase();
+      const qd = q.replace(/\D/g, "");
+      const list = data.clients.filter(c => !q || (c.name || "").toLowerCase().includes(q) || (c.city || "").toLowerCase().includes(q) || (qd && (c.phone || "").includes(qd)));
+      el.innerHTML = `<div class="list">${list.map(c => `
+        <button class="item" data-c="${c.id}">
+          <div class="avatar">${esc(initials(c.name))}</div>
+          <div class="info"><b>${esc(c.name)}</b><small>${esc(addressLine(c))}</small><small>${esc(prettyPhone(c.phone))}</small></div>
+          <div class="right">${c.regionName ? `<span class="badge">${esc(c.regionName)}</span>` : ""}${c.hasPhoto ? `<div style="margin-top:4px">🏠</div>` : ""}</div>
+        </button>`).join("") || `<div class="empty">${q ? "Nenhum cliente encontrado." : "Nenhum cliente ainda."}</div>`}</div>`;
+      el.querySelectorAll("[data-c]").forEach(b => b.onclick = () => clientSheet(data.clients.find(c => c.id === b.dataset.c)));
+    }
+  },
+
+  /* ----- Produtos ----- */
+  produtos: {
+    mount(el) {
+      el.innerHTML = `<div class="row"><h2>Produtos</h2><button class="small-btn" id="np">+ Novo produto</button></div><div id="vl"></div>`;
+      $("np").onclick = () => productSheet();
+    },
+    list(el) {
+      if (!data.loaded.products) return el.innerHTML = loading;
+      el.innerHTML = `<div class="list">${data.products.map(p => `
+        <button class="item" data-p="${p.id}">
+          ${p.photo ? `<img class="thumb" src="${p.photo}" alt="">` : `<div class="thumb">📦</div>`}
+          <div class="info"><b>${esc(p.name)}</b><small>${money(p.price)} por unidade</small></div>
+          <div class="right">
+            <span class="badge ${p.active === false ? "gray" : (p.stock || 0) <= 0 ? "red" : (p.stock || 0) <= 5 ? "amber" : ""}">${p.active === false ? "Inativo" : `${p.stock || 0} em estoque`}</span>
+          </div>
+        </button>`).join("") || `<div class="empty">Nenhum produto ainda. Cadastre o primeiro.</div>`}</div>`;
+      el.querySelectorAll("[data-p]").forEach(b => b.onclick = () => productSheet(data.products.find(p => p.id === b.dataset.p)));
+    }
+  },
+
+  /* ----- Separação (produtos para levar no dia) ----- */
+  separacao: {
+    mount(el) {
+      el.innerHTML = `<h2>Separação</h2><p class="note" style="margin:-8px 0 14px">Soma de todos os produtos das ordens do dia escolhido.</p><div id="vl"></div>`;
+    },
+    list(el) {
+      if (!data.loaded.orders) return el.innerHTML = loading;
+      const live = data.orders.filter(o => o.status !== "cancelada");
+      const dates = [...new Set(live.map(o => o.deliveryDate))].sort();
+      const t = today();
+      if (!dates.includes(sepDate)) sepDate = dates.find(d => d >= t) || dates[dates.length - 1] || null;
+      if (!sepDate) return el.innerHTML = `<div class="empty">Ainda não tem ordens para separar.</div>`;
+      const dayOrders = live.filter(o => o.deliveryDate === sepDate);
+      const sum = {};
+      dayOrders.forEach(o => (o.items || []).forEach(i => { sum[i.name] = (sum[i.name] || 0) + i.qty; }));
+      const rows = Object.entries(sum).sort((a, b) => a[0].localeCompare(b[0]));
+      const regions = {};
+      dayOrders.forEach(o => { const r = o.regionName || "Sem região"; regions[r] = (regions[r] || 0) + 1; });
+      el.innerHTML = `
+        <div class="chips">${dates.map(d => `<button class="chip ${d === sepDate ? "on" : ""}" data-d="${d}">${fmtDate(d)}</button>`).join("")}</div>
+        <div class="summary">
+          <div><small>Ordens</small><b>${dayOrders.length}</b></div>
+          <div><small>Itens</small><b>${rows.reduce((s, r) => s + r[1], 0)}</b></div>
+          <div><small>Regiões</small><b>${Object.keys(regions).length}</b></div>
+        </div>
+        <table><thead><tr><th>Produto</th><th class="n">Quantidade</th></tr></thead>
+          <tbody>${rows.map(r => `<tr><td>${esc(r[0])}</td><td class="n"><b>${r[1]}</b></td></tr>`).join("")}</tbody></table>
+        <p class="note">${Object.entries(regions).map(([r, n]) => `${esc(r)}: ${n} ordem${n > 1 ? "s" : ""}`).join(" · ")}</p>
+        <div class="actions">
+          <button class="btn ghost" id="csv">📄 Baixar planilha</button>
+          <button class="btn ghost" id="wa">💬 Enviar no WhatsApp</button>
+        </div>`;
+      el.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { sepDate = b.dataset.d; this.list(el); });
+      $("csv").onclick = () => {
+        const csv = "﻿Produto,Quantidade\n" + rows.map(r => `"${r[0].replace(/"/g, '""')}",${r[1]}`).join("\n");
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+        a.download = `separacao-${sepDate}.csv`;
+        document.body.appendChild(a); a.click(); a.remove();
+      };
+      $("wa").onclick = () => {
+        const txt = `*Separação ${fmtDate(sepDate)}* (${dayOrders.length} ordens)\n\n` + rows.map(r => `${r[1]}x ${r[0]}`).join("\n");
+        window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
+      };
+    }
+  },
+
+  /* ----- Ajustes (só administrador) ----- */
+  ajustes: {
+    mount(el) {
+      el.innerHTML = `<h2>Ajustes</h2>
+        <div class="row"><h4 style="margin:0">Regiões de entrega</h4><button class="small-btn ghost" id="nr">+ Região</button></div>
+        <div id="vl"></div>
+        <h4>Dados do negócio</h4>
+        <form class="card" id="sf">
+          <label for="sbn">Nome nas mensagens</label>
+          <input id="sbn" placeholder="Delivery da Fazenda">
+          <label for="szel">Zelle (e-mail ou telefone)</label>
+          <input id="szel">
+          <label for="sven">Venmo (@usuário)</label>
+          <input id="sven" placeholder="@seu-usuario">
+          <button class="btn" id="ss">Salvar</button>
+        </form>`;
+      $("nr").onclick = () => regionSheet();
+      $("sf").onsubmit = async ev => {
+        ev.preventDefault();
+        const b = $("ss");
+        setBusy(b, true, "Salvando...");
+        try {
+          await setDoc(doc(db, "config", "settings"), { businessName: val("sbn"), zelle: val("szel"), venmo: val("sven") }, { merge: true });
+          toast("Dados salvos.");
+        } catch (e) { toast(errMsg(e)); }
+        setBusy(b, false);
+      };
+    },
+    list(el) {
+      const sf = $("sf");
+      if (sf && data.loaded.settings && !sf.dataset.filled) {
+        sf.dataset.filled = "1";
+        $("sbn").value = data.settings.businessName || "";
+        $("szel").value = data.settings.zelle || "";
+        $("sven").value = data.settings.venmo || "";
+      }
+      if (!data.loaded.regions) return el.innerHTML = loading;
+      el.innerHTML = `<div class="list">${data.regions.map(r => `
+        <button class="item" data-r="${r.id}">
+          <div class="thumb">📍</div>
+          <div class="info"><b>${esc(r.name)}</b><small>Entrega no ${DAYS[r.day]?.label.toLowerCase() || "—"}</small></div>
+        </button>`).join("") || `<div class="empty">Cadastre as regiões, como Nova York, e o dia de entrega de cada uma.</div>`}</div>`;
+      el.querySelectorAll("[data-r]").forEach(b => b.onclick = () => regionSheet(data.regions.find(r => r.id === b.dataset.r)));
+    }
+  }
+};
+
+function orderCard(o) {
+  const [st, cls] = STATUS[o.status] || STATUS.aberta;
+  const n = (o.items || []).reduce((s, i) => s + i.qty, 0);
+  return `<button class="item" data-o="${o.id}" style="display:block">
+    <div style="display:flex;justify-content:space-between;gap:10px"><b>#${o.number} · ${esc(o.clientName)}</b><b>${money(o.total)}</b></div>
+    <small style="color:var(--muted)">${esc(o.regionName || "Sem região")} · ${fmtDate(o.deliveryDate)} · ${n} ${n === 1 ? "item" : "itens"} · ${esc(o.sellerName || "")}</small>
+    <div class="tags"><span class="badge ${cls}">${st}</span>${o.status === "cancelada" ? "" : `<span class="badge ${o.paid ? "" : "red"}">${o.paid ? "Pago" : "Não pago"}</span>`}</div>
+  </button>`;
+}
+
+/* ----- Nova ordem ----- */
+function orderSheet(preClientId) {
+  let client = preClientId ? data.clients.find(c => c.id === preClientId) : null;
+  const qty = {};
+  const products = data.products.filter(p => p.active !== false);
+  const regionOpts = sel => `<option value="">Sem região</option>` + data.regions.map(r => `<option value="${r.id}" ${r.id === sel ? "selected" : ""}>${esc(r.name)}</option>`).join("");
+
+  const ov = openSheet(`
+    <h3>Nova ordem</h3>
+    <div class="sheet-msg"></div>
+    <label>Cliente</label>
+    <div id="ocw"></div>
+    <div class="two">
+      <div><label for="or">Região</label><select id="or">${regionOpts("")}</select></div>
+      <div><label for="oday">Dia</label><select id="oday"><option value="sab">Sábado</option><option value="dom">Domingo</option></select></div>
+    </div>
+    <label for="odate">Data da entrega</label>
+    <input id="odate" type="date">
+    <label>Produtos</label>
+    <div id="opl">${products.map(p => `
+      <div class="prod">
+        ${p.photo ? `<img class="thumb" src="${p.photo}" alt="">` : `<div class="thumb">📦</div>`}
+        <div class="info"><b>${esc(p.name)}</b><small>${money(p.price)} · ${p.stock || 0} em estoque</small></div>
+        <div class="stepper" id="st-${p.id}">
+          <button type="button" data-m="${p.id}">−</button>
+          <input type="number" inputmode="numeric" min="0" value="" placeholder="0" data-q="${p.id}">
+          <button type="button" data-p="${p.id}">+</button>
+        </div>
+      </div>`).join("") || `<div class="empty">Cadastre produtos na aba Produtos primeiro.</div>`}</div>
+    <label for="onote">Observação (opcional)</label>
+    <textarea id="onote" placeholder="Ex.: ligar antes, portão azul"></textarea>
+    <div class="totalbar">
+      <div class="row"><span>Total</span><b id="otot" style="font-size:22px">$0.00</b></div>
+      <button class="btn" id="osave">Salvar ordem</button>
+      <button type="button" class="link" data-close>Cancelar</button>
+    </div>`);
+
+  const setDay = day => { $("oday").value = day; $("odate").value = nextDateFor(day); };
+  const applyClient = () => {
+    const w = $("ocw");
+    if (client) {
+      w.innerHTML = `<div class="picked"><div><b>${esc(client.name)}</b><small>${esc(addressLine(client))}</small></div><button type="button" class="small-btn ghost" id="occ">Trocar</button></div>`;
+      $("occ").onclick = () => { client = null; applyClient(); };
+      $("or").value = client.regionId || "";
+      const r = data.regions.find(r => r.id === client.regionId);
+      if (r?.day) setDay(r.day);
+    } else {
+      w.innerHTML = `<input id="ocs" type="search" placeholder="Digite o nome do cliente"><div id="ocr"></div>
+        <button type="button" class="link" id="ocn" style="text-align:left">+ Cadastrar cliente novo</button>`;
+      const draw = () => {
+        const q = $("ocs").value.trim().toLowerCase();
+        const res = q ? data.clients.filter(c => (c.name || "").toLowerCase().includes(q) || (c.phone || "").includes(q.replace(/\D/g, "") || "#")).slice(0, 6) : [];
+        $("ocr").innerHTML = res.length ? `<div class="results">${res.map(c => `<button type="button" data-pc="${c.id}"><b>${esc(c.name)}</b><small>${esc(addressLine(c))}</small></button>`).join("")}</div>` : (q ? `<p class="note">Nenhum cliente com esse nome.</p>` : "");
+        $("ocr").querySelectorAll("[data-pc]").forEach(b => b.onclick = () => { client = data.clients.find(c => c.id === b.dataset.pc); applyClient(); });
+      };
+      $("ocs").oninput = draw;
+      $("ocn").onclick = () => clientSheet(null, id => orderSheet(id));
+    }
+  };
+  $("or").onchange = () => { const r = data.regions.find(r => r.id === $("or").value); if (r?.day) setDay(r.day); };
+  $("oday").onchange = () => setDay($("oday").value);
+  setDay("sab");
+  applyClient();
+
+  const total = () => products.reduce((s, p) => s + (qty[p.id] || 0) * (p.price || 0), 0);
+  const setQty = (id, n) => {
+    n = Math.max(0, Math.floor(Number(n) || 0));
+    qty[id] = n;
+    const st = $("st-" + id);
+    st.querySelector("input").value = n || "";
+    st.classList.toggle("has", n > 0);
+    $("otot").textContent = money(total());
+  };
+  ov.querySelectorAll("[data-m]").forEach(b => b.onclick = () => setQty(b.dataset.m, (qty[b.dataset.m] || 0) - 1));
+  ov.querySelectorAll("[data-p]").forEach(b => b.onclick = () => setQty(b.dataset.p, (qty[b.dataset.p] || 0) + 1));
+  ov.querySelectorAll("[data-q]").forEach(i => i.oninput = () => setQty(i.dataset.q, i.value));
+
+  $("osave").onclick = async () => {
+    if (!client) return sheetError(ov, "Escolha o cliente.");
+    const items = products.filter(p => qty[p.id] > 0).map(p => ({ productId: p.id, name: p.name, price: p.price || 0, qty: qty[p.id] }));
+    if (!items.length) return sheetError(ov, "Escolha pelo menos um produto.");
+    if (!$("odate").value) return sheetError(ov, "Escolha a data da entrega.");
+    const short = items.filter(i => i.qty > (products.find(p => p.id === i.productId).stock || 0));
+    if (short.length && !confirm(`Estoque insuficiente de: ${short.map(i => i.name).join(", ")}.\nSalvar mesmo assim?`)) return;
+    const region = data.regions.find(r => r.id === $("or").value);
+    const order = {
+      clientId: client.id, clientName: client.name, clientPhone: client.phone || "",
+      address: { street: client.street || "", apt: client.apt || "", city: client.city || "", state: client.state || "", zip: client.zip || "" },
+      regionId: region?.id || "", regionName: region?.name || "",
+      day: $("oday").value, deliveryDate: $("odate").value,
+      items, total: Math.round(items.reduce((s, i) => s + i.qty * i.price, 0) * 100) / 100,
+      notes: val("onote"), status: "aberta", paid: false,
+      sellerId: me.uid, sellerName: me.name, createdAt: serverTimestamp()
+    };
+    const b = $("osave");
+    setBusy(b, true, "Salvando...");
+    try {
+      const number = await runTransaction(db, async tx => {
+        const cRef = doc(db, "config", "counter");
+        const cSnap = await tx.get(cRef);
+        const pSnaps = await Promise.all(items.map(i => tx.get(doc(db, "products", i.productId))));
+        const n = (cSnap.exists() ? cSnap.data().orders || 0 : 0) + 1;
+        pSnaps.forEach((s, k) => { if (s.exists()) tx.update(s.ref, { stock: (s.data().stock || 0) - items[k].qty }); });
+        tx.set(cRef, { orders: n }, { merge: true });
+        tx.set(doc(collection(db, "orders")), { ...order, number: n });
+        return n;
+      });
+      orderDate = order.deliveryDate;
+      closeSheet();
+      toast(`Ordem #${number} salva!`);
+    } catch (e) { setBusy(b, false); sheetError(ov, errMsg(e)); }
+  };
+}
+
+/* ----- Detalhe da ordem ----- */
+function orderDetail(o) {
+  if (!o) return;
+  const [st, cls] = STATUS[o.status] || STATUS.aberta;
+  const c = data.clients.find(c => c.id === o.clientId) || {};
+  const addr = o.address || c;
+  const ov = openSheet(`
+    <div class="row" style="margin-bottom:4px"><h3>Ordem #${o.number}</h3><span class="badge ${cls}">${st}</span></div>
+    <div class="sheet-msg"></div>
+    <div class="kv"><span>Cliente</span><b>${esc(o.clientName)}</b></div>
+    <div class="kv"><span>Telefone</span><b>${esc(prettyPhone(o.clientPhone))}</b></div>
+    <div class="kv"><span>Endereço</span><b style="text-align:right">${esc(addressLine(addr))}</b></div>
+    <div class="kv"><span>Região</span><b>${esc(o.regionName || "—")}</b></div>
+    <div class="kv"><span>Entrega</span><b>${fmtDate(o.deliveryDate)}</b></div>
+    <div class="kv"><span>Vendedor</span><b>${esc(o.sellerName || "—")}</b></div>
+    <div class="kv"><span>Pagamento</span><b style="color:${o.paid ? "var(--green)" : "var(--red)"}">${o.paid ? "Pago" + (o.paymentMethod ? ` (${esc(o.paymentMethod)})` : "") : "Não pago"}</b></div>
+    ${o.notes ? `<div class="kv"><span>Observação</span><b style="text-align:right">${esc(o.notes)}</b></div>` : ""}
+    <h4>Produtos</h4>
+    <table><tbody>${(o.items || []).map(i => `<tr><td>${i.qty}x ${esc(i.name)}</td><td class="n">${money(i.qty * i.price)}</td></tr>`).join("")}
+      <tr><td><b>Total</b></td><td class="n"><b>${money(o.total)}</b></td></tr></tbody></table>
+    <div class="actions">
+      <a class="btn ghost" href="${mapLink(addr)}" target="_blank" rel="noopener">🗺️ Mapa</a>
+      ${o.clientPhone ? `<a class="btn ghost" href="https://wa.me/${o.clientPhone.replace(/\D/g, "")}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ""}
+    </div>
+    ${o.status === "aberta" && can("admin", "vendedor") ? `<button class="btn danger" id="ocancel">Cancelar ordem</button>` : ""}
+    <button type="button" class="link" data-close>Fechar</button>`);
+  const cb = $("ocancel");
+  if (cb) cb.onclick = async () => {
+    if (!confirm(`Cancelar a ordem #${o.number}? Os produtos voltam para o estoque.`)) return;
+    setBusy(cb, true, "Cancelando...");
+    try {
+      await runTransaction(db, async tx => {
+        const ref = doc(db, "orders", o.id);
+        const snap = await tx.get(ref);
+        if (!snap.exists() || snap.data().status !== "aberta") throw new Error("Essa ordem não está mais aberta.");
+        const items = snap.data().items || [];
+        const pSnaps = await Promise.all(items.map(i => tx.get(doc(db, "products", i.productId))));
+        pSnaps.forEach((s, k) => { if (s.exists()) tx.update(s.ref, { stock: (s.data().stock || 0) + items[k].qty }); });
+        tx.update(ref, { status: "cancelada", cancelledBy: me.name, cancelledAt: serverTimestamp() });
+      });
+      closeSheet();
+      toast(`Ordem #${o.number} cancelada.`);
+    } catch (e) { setBusy(cb, false); sheetError(ov, errMsg(e)); }
+  };
+}
+
+/* ----- Cliente ----- */
+async function clientSheet(c, afterSave) {
+  const editing = !!c;
+  let newPhoto = null;
+  const ov = openSheet(`
+    <h3>${editing ? "Editar cliente" : "Novo cliente"}</h3>
+    <div class="sheet-msg"></div>
+    <form id="cf">
+      <label for="cn">Nome completo</label>
+      <input id="cn" value="${esc(c?.name)}" required>
+      <label>Telefone (WhatsApp)</label>
+      ${phoneFields("cp", c?.phone || "")}
+      <label for="cst">Endereço (street)</label>
+      <input id="cst" value="${esc(c?.street)}" placeholder="123 Main St" autocomplete="address-line1" required>
+      <label for="capt">Apto / casa (opcional)</label>
+      <input id="capt" value="${esc(c?.apt)}" placeholder="Apt 4B" autocomplete="address-line2">
+      <label for="ccity">Cidade</label>
+      <input id="ccity" value="${esc(c?.city)}" autocomplete="address-level2" required>
+      <div class="two">
+        <div><label for="cstate">Estado</label><input id="cstate" value="${esc(c?.state)}" placeholder="NY" maxlength="2" autocapitalize="characters" required></div>
+        <div><label for="czip">ZIP code</label><input id="czip" value="${esc(c?.zip)}" inputmode="numeric" maxlength="10" autocomplete="postal-code" required></div>
+      </div>
+      <label for="creg">Região de entrega</label>
+      <select id="creg"><option value="">Sem região</option>${data.regions.map(r => `<option value="${r.id}" ${r.id === c?.regionId ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select>
+      <label for="cnote">Observação (opcional)</label>
+      <textarea id="cnote" placeholder="Ex.: portão azul, ligar antes">${esc(c?.notes)}</textarea>
+      <label>Foto da casa</label>
+      <div id="cph">${photoPicker("chp", null, "🏠")}</div>
+      ${editing ? `<a class="btn ghost" href="${mapLink(c)}" target="_blank" rel="noopener">🗺️ Ver no mapa</a>` : ""}
+      <button class="btn" id="csave">${editing ? "Salvar" : "Cadastrar cliente"}</button>
+      ${editing && can("admin") ? `<button type="button" class="btn danger" id="cdel">Apagar cliente</button>` : ""}
+      <button type="button" class="link" data-close>Cancelar</button>
+    </form>`);
+  wirePhoto("chp", 900, 0.6, p => newPhoto = p);
+
+  if (editing && c.hasPhoto) {
+    try {
+      const ps = await getDoc(doc(db, "clientPhotos", c.id));
+      const img = $("chp-img");
+      if (ps.exists() && img && !newPhoto) {
+        const n = document.createElement("img");
+        n.id = "chp-img"; n.src = ps.data().data; n.alt = "";
+        img.replaceWith(n);
+      }
+    } catch {}
+  }
+
+  $("cf").onsubmit = async ev => {
+    ev.preventDefault();
+    const phone = readPhone("cp");
+    if (!phone) return sheetError(ov, "Digite o telefone.");
+    const region = data.regions.find(r => r.id === $("creg").value);
+    const rec = {
+      name: val("cn"), phone, street: val("cst"), apt: val("capt"), city: val("ccity"),
+      state: val("cstate").toUpperCase(), zip: val("czip"),
+      regionId: region?.id || "", regionName: region?.name || "",
+      notes: val("cnote"), hasPhoto: !!(newPhoto || c?.hasPhoto),
+      updatedAt: serverTimestamp(), updatedBy: me.name
+    };
+    const b = $("csave");
+    setBusy(b, true, "Salvando...");
+    try {
+      let id = c?.id;
+      if (editing) await updateDoc(doc(db, "clients", id), rec);
+      else id = (await addDoc(collection(db, "clients"), { ...rec, createdAt: serverTimestamp(), createdBy: me.name })).id;
+      if (newPhoto) await setDoc(doc(db, "clientPhotos", id), { data: newPhoto, updatedAt: serverTimestamp(), by: me.name });
+      closeSheet();
+      toast(editing ? "Cliente atualizado." : "Cliente cadastrado!");
+      if (afterSave) setTimeout(() => afterSave(id), 300);
+    } catch (e) { setBusy(b, false); sheetError(ov, errMsg(e)); }
+  };
+  const del = $("cdel");
+  if (del) del.onclick = async () => {
+    if (!confirm(`Apagar ${c.name}? As ordens antigas continuam guardadas.`)) return;
+    try { await deleteDoc(doc(db, "clients", c.id)); await deleteDoc(doc(db, "clientPhotos", c.id)).catch(() => {}); closeSheet(); toast("Cliente apagado."); }
+    catch (e) { sheetError(ov, errMsg(e)); }
+  };
+}
+
+/* ----- Produto ----- */
+function productSheet(p) {
+  const editing = !!p;
+  let photo = p?.photo || null;
+  const ov = openSheet(`
+    <h3>${editing ? "Editar produto" : "Novo produto"}</h3>
+    <div class="sheet-msg"></div>
+    <form id="pf">
+      <label>Foto</label>
+      ${photoPicker("pph", photo, "📦")}
+      <label for="pn">Nome</label>
+      <input id="pn" value="${esc(p?.name)}" placeholder="Ex.: Galinha caipira" required>
+      <div class="two">
+        <div><label for="ppr">Preço por unidade ($)</label><input id="ppr" type="number" inputmode="decimal" step="0.01" min="0" value="${p?.price ?? ""}" required></div>
+        <div><label for="pst">Estoque (unidades)</label><input id="pst" type="number" inputmode="numeric" step="1" value="${p?.stock ?? ""}" required></div>
+      </div>
+      <div class="switch"><span>Disponível para venda</span><input type="checkbox" id="pac" ${p?.active === false ? "" : "checked"}></div>
+      <button class="btn" id="psave">${editing ? "Salvar" : "Cadastrar produto"}</button>
+      ${editing && can("admin") ? `<button type="button" class="btn danger" id="pdel">Apagar produto</button>` : ""}
+      <button type="button" class="link" data-close>Cancelar</button>
+    </form>`);
+  wirePhoto("pph", 500, 0.7, d => photo = d);
+  $("pf").onsubmit = async ev => {
+    ev.preventDefault();
+    const rec = { name: val("pn"), price: Math.round(Number($("ppr").value) * 100) / 100, stock: Math.floor(Number($("pst").value) || 0), active: $("pac").checked, photo: photo || "", updatedAt: serverTimestamp() };
+    const b = $("psave");
+    setBusy(b, true, "Salvando...");
+    try {
+      if (editing) await updateDoc(doc(db, "products", p.id), rec);
+      else await addDoc(collection(db, "products"), { ...rec, createdAt: serverTimestamp() });
+      closeSheet();
+      toast(editing ? "Produto atualizado." : "Produto cadastrado!");
+    } catch (e) { setBusy(b, false); sheetError(ov, errMsg(e)); }
+  };
+  const del = $("pdel");
+  if (del) del.onclick = async () => {
+    if (!confirm(`Apagar ${p.name}? Se quiser só parar de vender, desmarque "Disponível para venda".`)) return;
+    try { await deleteDoc(doc(db, "products", p.id)); closeSheet(); toast("Produto apagado."); }
+    catch (e) { sheetError(ov, errMsg(e)); }
+  };
+}
+
+/* ----- Região ----- */
+function regionSheet(r) {
+  const editing = !!r;
+  const ov = openSheet(`
+    <h3>${editing ? "Editar região" : "Nova região"}</h3>
+    <div class="sheet-msg"></div>
+    <form id="rf">
+      <label for="rn">Nome da região</label>
+      <input id="rn" value="${esc(r?.name)}" placeholder="Ex.: Nova York" required>
+      <label for="rd">Dia de entrega</label>
+      <select id="rd">${Object.entries(DAYS).map(([k, d]) => `<option value="${k}" ${r?.day === k ? "selected" : ""}>${d.label}</option>`).join("")}</select>
+      <p class="note">Ao lançar uma ordem para essa região, o app já sugere esse dia.</p>
+      <button class="btn" id="rsave">Salvar</button>
+      ${editing ? `<button type="button" class="btn danger" id="rdel">Apagar região</button>` : ""}
+      <button type="button" class="link" data-close>Cancelar</button>
+    </form>`);
+  $("rf").onsubmit = async ev => {
+    ev.preventDefault();
+    const rec = { name: val("rn"), day: $("rd").value };
+    const b = $("rsave");
+    setBusy(b, true, "Salvando...");
+    try {
+      if (editing) await updateDoc(doc(db, "regions", r.id), rec);
+      else await addDoc(collection(db, "regions"), rec);
+      closeSheet(); toast("Região salva.");
+    } catch (e) { setBusy(b, false); sheetError(ov, errMsg(e)); }
+  };
+  const del = $("rdel");
+  if (del) del.onclick = async () => {
+    if (!confirm(`Apagar a região ${r.name}?`)) return;
+    try { await deleteDoc(doc(db, "regions", r.id)); closeSheet(); toast("Região apagada."); }
+    catch (e) { sheetError(ov, errMsg(e)); }
+  };
+}
+
 /* ===== Equipe (só administrador) ===== */
 function renderTeam(main) {
   main.innerHTML = `<div class="row"><h2>Equipe</h2><button class="small-btn" id="add">+ Novo usuário</button></div>
-    <div class="list" id="ul"><div class="spinner"></div></div>`;
-  document.getElementById("add").onclick = () => userSheet();
+    <div class="list" id="ul">${loading}</div>`;
+  $("add").onclick = () => userSheet();
   if (!unsubUsers) {
     unsubUsers = onSnapshot(collection(db, "users"), snap => {
       users = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
         .sort((a, b) => (a.active === false) - (b.active === false) || (a.name || "").localeCompare(b.name || ""));
       drawUsers();
-    }, e => { const ul = document.getElementById("ul"); if (ul) ul.innerHTML = `<div class="msg err">${esc(errMsg(e))}</div>`; });
+    }, e => { const ul = $("ul"); if (ul) ul.innerHTML = `<div class="msg err">${esc(errMsg(e))}</div>`; });
   } else drawUsers();
 }
 
 function drawUsers() {
-  const ul = document.getElementById("ul");
+  const ul = $("ul");
   if (!ul) return;
   ul.innerHTML = users.map(u => `
-    <button class="user" data-u="${u.uid}">
+    <button class="item" data-u="${u.uid}">
       <div class="avatar">${esc(initials(u.name))}</div>
       <div class="info"><b>${esc(u.name)}${u.uid === me.uid ? " (você)" : ""}</b>
         <small>${esc(prettyPhone(u.phone))}</small><small>${esc(u.email)}</small></div>
       <span class="badge ${u.active === false ? "off" : ""}">${u.active === false ? "Desativado" : esc(ROLES[u.role] || u.role)}</span>
     </button>`).join("") || `<p class="note">Nenhum usuário ainda.</p>`;
-  ul.querySelectorAll(".user").forEach(b => b.onclick = () => userSheet(users.find(u => u.uid === b.dataset.u)));
+  ul.querySelectorAll("[data-u]").forEach(b => b.onclick = () => userSheet(users.find(u => u.uid === b.dataset.u)));
 }
-
-function closeSheet() { document.querySelector(".overlay")?.remove(); }
 
 function userSheet(u) {
   const editing = !!u, self = editing && u.uid === me.uid;
-  const ov = document.createElement("div");
-  ov.className = "overlay";
-  ov.innerHTML = `<form class="sheet" id="uf">
+  const ov = openSheet(`<form id="uf">
     <h3>${editing ? "Editar usuário" : "Novo usuário"}</h3>
-    <div id="um"></div>
+    <div class="sheet-msg"></div>
     <label for="un">Nome completo</label>
     <input id="un" value="${esc(u?.name)}" required>
     <label for="ue">E-mail (login)</label>
@@ -354,34 +1009,30 @@ function userSheet(u) {
       <p class="note">Passe essa senha para a pessoa. Ela pode trocar depois em "Esqueci a senha".</p>
       <button class="btn" id="usave">Cadastrar</button>
     `}
-    <button type="button" class="link" id="ucancel">Cancelar</button>
-  </form>`;
-  document.body.appendChild(ov);
-  ov.onclick = e => { if (e.target === ov) closeSheet(); };
-  document.getElementById("ucancel").onclick = closeSheet;
-  const showErr = m => { document.getElementById("um").innerHTML = `<div class="msg err">${esc(m)}</div>`; ov.querySelector(".sheet").scrollTop = 0; };
+    <button type="button" class="link" data-close>Cancelar</button>
+  </form>`);
 
   if (editing) {
-    document.getElementById("ureset").onclick = async () => {
+    $("ureset").onclick = async () => {
       try { await sendPasswordResetEmail(auth, u.email); toast("E-mail de troca de senha enviado."); }
-      catch (e) { showErr(errMsg(e)); }
+      catch (e) { sheetError(ov, errMsg(e)); }
     };
   }
 
-  document.getElementById("uf").onsubmit = async ev => {
+  $("uf").onsubmit = async ev => {
     ev.preventDefault();
     const name = val("un"), phone = readPhone("up"), role = self ? u.role : val("ur");
-    if (!phone) return showErr("Digite o telefone.");
-    const b = document.getElementById("usave");
+    if (!phone) return sheetError(ov, "Digite o telefone.");
+    const b = $("usave");
     setBusy(b, true, "Salvando...");
     try {
       if (editing) {
-        const data = { name, phone, role };
-        if (!self) data.active = document.getElementById("ua").checked;
-        await updateDoc(doc(db, "users", u.uid), data);
+        const upd = { name, phone, role };
+        if (!self) upd.active = $("ua").checked;
+        await updateDoc(doc(db, "users", u.uid), upd);
         toast("Usuário atualizado.");
       } else {
-        const email = val("ue"), pw = document.getElementById("upw").value;
+        const email = val("ue"), pw = $("upw").value;
         const cred = await createUserWithEmailAndPassword(secAuth, email, pw);
         const uid = cred.user.uid;
         await signOut(secAuth);
@@ -391,7 +1042,7 @@ function userSheet(u) {
       closeSheet();
     } catch (e) {
       setBusy(b, false);
-      showErr(errMsg(e));
+      sheetError(ov, errMsg(e));
     }
   };
 }
@@ -403,6 +1054,7 @@ onAuthStateChanged(auth, async user => {
   if (!user) {
     me = null;
     if (unsubUsers) { unsubUsers(); unsubUsers = null; }
+    stopData();
     closeSheet();
     return showStart();
   }
@@ -414,6 +1066,7 @@ onAuthStateChanged(auth, async user => {
     }
     me = { uid: user.uid, ...snap.data() };
     tab = (ACCESS[me.role] || [])[0];
+    startData();
     showMain();
   } catch (e) {
     showLogin(errMsg(e));
