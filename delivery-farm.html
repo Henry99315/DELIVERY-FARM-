@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f6f43">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Delivery Farm</title>
+<style>
+  :root{--green:#1f6f43;--green-d:#165233;--green-l:#e8f3ec;--red:#c0392b;--red-l:#fbeaea;--bg:#f6f5f1;--card:#fff;--text:#1d1d1b;--muted:#6b6b66;--line:#e3e1da}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:16px;-webkit-tap-highlight-color:transparent}
+  .center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+  .box{width:100%;max-width:420px}
+  .brand{text-align:center;margin-bottom:24px}
+  .brand .logo{font-size:44px}
+  .brand h1{margin:6px 0 2px;font-size:26px;color:var(--green)}
+  .brand p{margin:0;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  label{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}
+  input,select{width:100%;font-size:16px;padding:13px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--text)}
+  input:focus,select:focus{outline:2px solid var(--green);border-color:transparent}
+  .phone{display:flex;gap:8px}
+  .phone select{width:110px;flex:none}
+  button{font:inherit;cursor:pointer}
+  .btn{display:block;width:100%;padding:15px;border:0;border-radius:12px;background:var(--green);color:#fff;font-size:17px;font-weight:700;margin-top:20px}
+  .btn:active{background:var(--green-d)}
+  .btn:disabled{opacity:.6}
+  .btn.ghost{background:transparent;color:var(--green);border:1px solid var(--green);margin-top:10px}
+  .btn.danger{background:var(--red)}
+  .link{background:none;border:0;color:var(--green);font-weight:600;padding:12px 0;width:100%;text-align:center}
+  .msg{padding:12px;border-radius:10px;margin-bottom:12px;font-size:15px}
+  .msg.err{background:var(--red-l);color:var(--red)}
+  .msg.ok{background:var(--green-l);color:var(--green-d)}
+  .note{color:var(--muted);font-size:14px;margin:10px 0 0}
+  header.top{position:sticky;top:0;z-index:5;background:var(--green);color:#fff;padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between}
+  header.top .who b{display:block;font-size:17px}
+  header.top .who span{font-size:13px;opacity:.85}
+  header.top button{background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:8px;padding:8px 12px;font-size:14px}
+  main{padding:16px;padding-bottom:110px;max-width:720px;margin:0 auto}
+  nav.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+  nav.tabs button{flex:1;background:none;border:0;padding:10px 4px 12px;color:var(--muted);font-size:12px;font-weight:600}
+  nav.tabs button .i{display:block;font-size:22px;margin-bottom:2px}
+  nav.tabs button.on{color:var(--green)}
+  h2{font-size:21px;margin:4px 0 14px}
+  .soon{text-align:center;padding:36px 18px}
+  .soon .i{font-size:46px}
+  .soon p{color:var(--muted)}
+  .list{display:flex;flex-direction:column;gap:10px}
+  .user{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:left;width:100%}
+  .avatar{width:42px;height:42px;border-radius:50%;background:var(--green-l);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+  .user .info{flex:1;min-width:0}
+  .user .info b{display:block}
+  .user .info small{color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge{font-size:12px;font-weight:700;padding:4px 8px;border-radius:20px;background:var(--green-l);color:var(--green-d);white-space:nowrap}
+  .badge.off{background:var(--red-l);color:var(--red)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .row h2{margin:0}
+  .small-btn{background:var(--green);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+  .sheet{background:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+  .sheet h3{margin:0 0 4px;font-size:20px}
+  .switch{display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-weight:600}
+  .switch input{width:24px;height:24px}
+  .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:24px;z-index:30;font-size:15px;max-width:90vw;text-align:center}
+  .spinner{width:36px;height:36px;border:4px solid var(--green-l);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+/* ===== Configuração do Firebase ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBlqTko7E_bnGh7Yn3wuKPUWLIncwf0DhE",
+  authDomain: "delivery-farm-bff08.firebaseapp.com",
+  projectId: "delivery-farm-bff08",
+  storageBucket: "delivery-farm-bff08.firebasestorage.app",
+  messagingSenderId: "477347473207",
+  appId: "1:477347473207:web:d0ab54f90582b4f6271cb2",
+  measurementId: "G-WZ79T7W7MD"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+// Segunda instância: permite o administrador criar usuários sem sair da própria conta
+const secAuth = getAuth(initializeApp(firebaseConfig, "secondary"));
+
+/* ===== Perfis e abas ===== */
+const ROLES = { admin: "Administrador", vendedor: "Vendedor", entregador: "Entregador", contador: "Contador" };
+const TABS = {
+  vendas:   { label: "Vendas",   icon: "🛒", desc: "Lançamento de ordens, cadastro de clientes e produtos com estoque, e a lista de separação por dia." },
+  entregas: { label: "Entregas", icon: "🚚", desc: "Rota do dia pela localização do celular, baixa da entrega com foto e mensagens pelo WhatsApp." },
+  contas:   { label: "Contas",   icon: "💵", desc: "Ordens em verde (pagas) e vermelho (pendentes), e confirmação de pagamentos em cash, Zelle e Venmo." },
+  equipe:   { label: "Equipe",   icon: "👥" }
+};
+const ACCESS = {
+  admin: ["vendas", "entregas", "contas", "equipe"],
+  vendedor: ["vendas", "contas"],
+  entregador: ["entregas"],
+  contador: ["contas"]
+};
+
+/* ===== Utilidades ===== */
+const $app = document.getElementById("app");
+let me = null, tab = null, settingUp = false, unsubUsers = null, users = [];
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const val = id => document.getElementById(id).value.trim();
+const initials = n => (n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
+
+const ERR = {
+  "auth/invalid-credential": "E-mail ou senha incorretos.",
+  "auth/wrong-password": "E-mail ou senha incorretos.",
+  "auth/user-not-found": "E-mail ou senha incorretos.",
+  "auth/invalid-email": "E-mail inválido.",
+  "auth/missing-password": "Digite a senha.",
+  "auth/email-already-in-use": "Esse e-mail já está cadastrado.",
+  "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
+  "auth/too-many-requests": "Muitas tentativas. Espere um pouco e tente de novo.",
+  "auth/network-request-failed": "Sem conexão com a internet.",
+  "auth/operation-not-allowed": "Ative o login por e-mail e senha no Firebase (Authentication).",
+  "permission-denied": "Sem permissão. Confira se as regras do Firestore foram publicadas.",
+  "unavailable": "Sem conexão com o banco de dados. Verifique a internet."
+};
+const errMsg = e => ERR[e?.code] || e?.message || "Erro inesperado.";
+
+function toast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+function phoneFields(id, value = "") {
+  const cc = value.startsWith("+55") ? "+55" : "+1";
+  const num = value ? value.slice(cc.length) : "";
+  return `<div class="phone">
+    <select id="${id}-cc">
+      <option value="+1" ${cc === "+1" ? "selected" : ""}>🇺🇸 +1</option>
+      <option value="+55" ${cc === "+55" ? "selected" : ""}>🇧🇷 +55</option>
+    </select>
+    <input id="${id}-num" type="tel" inputmode="tel" placeholder="Número com DDD / area code" value="${esc(num)}">
+  </div>`;
+}
+function readPhone(id) {
+  const n = document.getElementById(id + "-num").value.replace(/\D/g, "");
+  return n ? document.getElementById(id + "-cc").value + n : "";
+}
+function prettyPhone(p = "") {
+  const m1 = p.match(/^\+1(\d{3})(\d{3})(\d{4})$/);
+  if (m1) return `+1 (${m1[1]}) ${m1[2]}-${m1[3]}`;
+  const m55 = p.match(/^\+55(\d{2})(\d{4,5})(\d{4})$/);
+  if (m55) return `+55 (${m55[1]}) ${m55[2]}-${m55[3]}`;
+  return p;
+}
+function setBusy(btn, busy, text) {
+  btn.disabled = busy;
+  if (busy) { btn.dataset.t = btn.textContent; btn.textContent = text || "Aguarde..."; }
+  else if (btn.dataset.t) btn.textContent = btn.dataset.t;
+}
+
+/* ===== Telas de entrada ===== */
+function showLoading() {
+  $app.innerHTML = `<div class="center"><div class="spinner"></div></div>`;
+}
+
+async function showStart(msg) {
+  showLoading();
+  try {
+    const setup = await getDoc(doc(db, "config", "setup"));
+    if (setup.exists()) showLogin(msg); else showSetup();
+  } catch (e) {
+    showLogin(msg || errMsg(e));
+  }
+}
+
+function brand(sub) {
+  return `<div class="brand"><div class="logo">🌾</div><h1>Delivery Farm</h1><p>${esc(sub)}</p></div>`;
+}
+
+function showLogin(msg, ok) {
+  $app.innerHTML = `<div class="center"><div class="box">
+    ${brand("Vendas e entregas")}
+    <form class="card" id="f">
+      ${msg ? `<div class="msg ${ok ? "ok" : "err"}">${esc(msg)}</div>` : ""}
+      <label for="email">E-mail</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="pw">Senha</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <button class="btn" id="go">Entrar</button>
+      <button type="button" class="link" id="forgot">Esqueci a senha</button>
+    </form>
+  </div></div>`;
+  document.getElementById("f").onsubmit = async ev => {
+    ev.preventDefault();
+    const b = document.getElementById("go");
+    setBusy(b, true, "Entrando...");
+    try { await signInWithEmailAndPassword(auth, val("email"), document.getElementById("pw").value); }
+    catch (e) { setBusy(b, false); showLogin(errMsg(e)); }
+  };
+  document.getElementById("forgot").onclick = async () => {
+    const email = val("email");
+    if (!email) return showLogin("Digite seu e-mail acima e toque em \"Esqueci a senha\" de novo.");
+    try { await sendPasswordResetEmail(auth, email); showLogin("Enviamos um e-mail para você criar uma nova senha.", true); }
+    catch (e) { showLogin(errMsg(e)); }
+  };
+}
+
+function showSetup(msg) {
+  $app.innerHTML = `<div class="center"><div class="box">
+    ${brand("Primeiro acesso")}
+    <form class="card" id="f">
+      ${msg ? `<div class="msg err">${esc(msg)}</div>` : ""}
+      <p class="note" style="margin-top:0">Crie a conta do <b>administrador</b>. Os outros usuários você cadastra depois, dentro do app.</p>
+      <label for="name">Nome completo</label>
+      <input id="name" required>
+      <label for="email">E-mail</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label>Telefone (WhatsApp)</label>
+      ${phoneFields("phone")}
+      <label for="pw">Senha (mínimo 6 caracteres)</label>
+      <input id="pw" type="password" autocomplete="new-password" required>
+      <label for="pw2">Repita a senha</label>
+      <input id="pw2" type="password" autocomplete="new-password" required>
+      <button class="btn" id="go">Criar administrador</button>
+    </form>
+  </div></div>`;
+  document.getElementById("f").onsubmit = async ev => {
+    ev.preventDefault();
+    const name = val("name"), email = val("email"), phone = readPhone("phone");
+    const pw = document.getElementById("pw").value, pw2 = document.getElementById("pw2").value;
+    if (!phone) return showSetup("Digite o telefone.");
+    if (pw !== pw2) return showSetup("As senhas não são iguais.");
+    const b = document.getElementById("go");
+    setBusy(b, true, "Criando...");
+    settingUp = true;
+    try {
+      let cred;
+      try { cred = await createUserWithEmailAndPassword(auth, email, pw); }
+      catch (e) {
+        if (e.code === "auth/email-already-in-use") cred = await signInWithEmailAndPassword(auth, email, pw);
+        else throw e;
+      }
+      const uid = cred.user.uid;
+      const profile = { name, email, phone, role: "admin", active: true, createdAt: serverTimestamp() };
+      const batch = writeBatch(db);
+      batch.set(doc(db, "users", uid), profile);
+      batch.set(doc(db, "config", "setup"), { done: true, admin: uid, at: serverTimestamp() });
+      await batch.commit();
+      settingUp = false;
+      me = { uid, ...profile };
+      tab = ACCESS.admin[0];
+      showMain();
+      toast("Administrador criado!");
+    } catch (e) {
+      settingUp = false;
+      try { await signOut(auth); } catch {}
+      showSetup(errMsg(e));
+    }
+  };
+}
+
+/* ===== Tela principal ===== */
+function showMain() {
+  const tabs = ACCESS[me.role] || [];
+  if (!tabs.includes(tab)) tab = tabs[0];
+  $app.innerHTML = `
+    <header class="top">
+      <div class="who"><b>${esc(me.name)}</b><span>${esc(ROLES[me.role] || me.role)}</span></div>
+      <button id="out">Sair</button>
+    </header>
+    <main id="main"></main>
+    ${tabs.length > 1 ? `<nav class="tabs">${tabs.map(t => `
+      <button data-t="${t}" class="${t === tab ? "on" : ""}"><span class="i">${TABS[t].icon}</span>${TABS[t].label}</button>`).join("")}
+    </nav>` : ""}`;
+  document.getElementById("out").onclick = () => signOut(auth);
+  document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; showMain(); });
+  renderTab();
+}
+
+function renderTab() {
+  const main = document.getElementById("main");
+  if (unsubUsers && tab !== "equipe") { unsubUsers(); unsubUsers = null; }
+  if (tab === "equipe") return renderTeam(main);
+  const t = TABS[tab];
+  main.innerHTML = `<h2>${t.label}</h2>
+    <div class="card soon"><div class="i">${t.icon}</div>
+      <p><b>Em construção</b></p>
+      <p>${esc(t.desc)}</p>
+    </div>`;
+}
+
+/* ===== Equipe (só administrador) ===== */
+function renderTeam(main) {
+  main.innerHTML = `<div class="row"><h2>Equipe</h2><button class="small-btn" id="add">+ Novo usuário</button></div>
+    <div class="list" id="ul"><div class="spinner"></div></div>`;
+  document.getElementById("add").onclick = () => userSheet();
+  if (!unsubUsers) {
+    unsubUsers = onSnapshot(collection(db, "users"), snap => {
+      users = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+        .sort((a, b) => (a.active === false) - (b.active === false) || (a.name || "").localeCompare(b.name || ""));
+      drawUsers();
+    }, e => { const ul = document.getElementById("ul"); if (ul) ul.innerHTML = `<div class="msg err">${esc(errMsg(e))}</div>`; });
+  } else drawUsers();
+}
+
+function drawUsers() {
+  const ul = document.getElementById("ul");
+  if (!ul) return;
+  ul.innerHTML = users.map(u => `
+    <button class="user" data-u="${u.uid}">
+      <div class="avatar">${esc(initials(u.name))}</div>
+      <div class="info"><b>${esc(u.name)}${u.uid === me.uid ? " (você)" : ""}</b>
+        <small>${esc(prettyPhone(u.phone))}</small><small>${esc(u.email)}</small></div>
+      <span class="badge ${u.active === false ? "off" : ""}">${u.active === false ? "Desativado" : esc(ROLES[u.role] || u.role)}</span>
+    </button>`).join("") || `<p class="note">Nenhum usuário ainda.</p>`;
+  ul.querySelectorAll(".user").forEach(b => b.onclick = () => userSheet(users.find(u => u.uid === b.dataset.u)));
+}
+
+function closeSheet() { document.querySelector(".overlay")?.remove(); }
+
+function userSheet(u) {
+  const editing = !!u, self = editing && u.uid === me.uid;
+  const ov = document.createElement("div");
+  ov.className = "overlay";
+  ov.innerHTML = `<form class="sheet" id="uf">
+    <h3>${editing ? "Editar usuário" : "Novo usuário"}</h3>
+    <div id="um"></div>
+    <label for="un">Nome completo</label>
+    <input id="un" value="${esc(u?.name)}" required>
+    <label for="ue">E-mail (login)</label>
+    <input id="ue" type="email" value="${esc(u?.email)}" ${editing ? "disabled" : "required"}>
+    <label>Telefone (WhatsApp)</label>
+    ${phoneFields("up", u?.phone || "")}
+    <label for="ur">Tipo de usuário</label>
+    <select id="ur" ${self ? "disabled" : ""}>
+      ${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${(u?.role || "vendedor") === k ? "selected" : ""}>${v}</option>`).join("")}
+    </select>
+    ${editing ? `
+      ${self ? "" : `<div class="switch"><span>Acesso ativo</span><input type="checkbox" id="ua" ${u.active !== false ? "checked" : ""}></div>`}
+      <button class="btn" id="usave">Salvar</button>
+      <button type="button" class="btn ghost" id="ureset">Enviar e-mail para trocar a senha</button>
+    ` : `
+      <label for="upw">Senha inicial (mínimo 6 caracteres)</label>
+      <input id="upw" type="text" autocomplete="off" required>
+      <p class="note">Passe essa senha para a pessoa. Ela pode trocar depois em "Esqueci a senha".</p>
+      <button class="btn" id="usave">Cadastrar</button>
+    `}
+    <button type="button" class="link" id="ucancel">Cancelar</button>
+  </form>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if (e.target === ov) closeSheet(); };
+  document.getElementById("ucancel").onclick = closeSheet;
+  const showErr = m => { document.getElementById("um").innerHTML = `<div class="msg err">${esc(m)}</div>`; ov.querySelector(".sheet").scrollTop = 0; };
+
+  if (editing) {
+    document.getElementById("ureset").onclick = async () => {
+      try { await sendPasswordResetEmail(auth, u.email); toast("E-mail de troca de senha enviado."); }
+      catch (e) { showErr(errMsg(e)); }
+    };
+  }
+
+  document.getElementById("uf").onsubmit = async ev => {
+    ev.preventDefault();
+    const name = val("un"), phone = readPhone("up"), role = self ? u.role : val("ur");
+    if (!phone) return showErr("Digite o telefone.");
+    const b = document.getElementById("usave");
+    setBusy(b, true, "Salvando...");
+    try {
+      if (editing) {
+        const data = { name, phone, role };
+        if (!self) data.active = document.getElementById("ua").checked;
+        await updateDoc(doc(db, "users", u.uid), data);
+        toast("Usuário atualizado.");
+      } else {
+        const email = val("ue"), pw = document.getElementById("upw").value;
+        const cred = await createUserWithEmailAndPassword(secAuth, email, pw);
+        const uid = cred.user.uid;
+        await signOut(secAuth);
+        await setDoc(doc(db, "users", uid), { name, email, phone, role, active: true, createdAt: serverTimestamp() });
+        toast(`${ROLES[role]} cadastrado!`);
+      }
+      closeSheet();
+    } catch (e) {
+      setBusy(b, false);
+      showErr(errMsg(e));
+    }
+  };
+}
+
+/* ===== Início ===== */
+showLoading();
+onAuthStateChanged(auth, async user => {
+  if (settingUp) return;
+  if (!user) {
+    me = null;
+    if (unsubUsers) { unsubUsers(); unsubUsers = null; }
+    closeSheet();
+    return showStart();
+  }
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if (!snap.exists() || snap.data().active === false) {
+      await signOut(auth);
+      return showLogin(snap.exists() ? "Seu acesso está desativado. Fale com o administrador." : "Usuário sem cadastro no app. Fale com o administrador.");
+    }
+    me = { uid: user.uid, ...snap.data() };
+    tab = (ACCESS[me.role] || [])[0];
+    showMain();
+  } catch (e) {
+    showLogin(errMsg(e));
+  }
+});
+</script>
+</body>
+</html>
