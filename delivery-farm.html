@@ -115,6 +115,14 @@
   .actions{display:flex;gap:8px;margin-top:10px}
   .actions a,.actions button{flex:1}
   .empty{text-align:center;color:var(--muted);padding:30px 10px}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .opt{margin:0;position:relative}
+  .opt input{position:absolute;opacity:0;pointer-events:none}
+  .opt span{display:block;text-align:center;padding:14px 8px;border:1px solid var(--line);border-radius:12px;background:#fff;font-weight:600;font-size:15px}
+  .opt input:checked + span{border-color:var(--green);background:var(--green-l);color:var(--green-d);box-shadow:0 0 0 1px var(--green)}
+  .stop .num{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+  .stop-name{background:none;border:0;padding:0;font-weight:700;font-size:17px;text-align:left}
+  .stop .actions .small-btn{flex:1;padding:12px 6px}
   .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:24px;z-index:30;font-size:15px;max-width:90vw;text-align:center}
   .spinner{width:36px;height:36px;border:4px solid var(--green-l);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -416,6 +424,7 @@ function startData() {
 }
 function refresh() {
   if (tab === "vendas" && $("vl")) VIEWS[vsub].list($("vl"));
+  if (tab === "entregas" && $("el")) drawEntregas();
 }
 
 /* ===== Tela principal ===== */
@@ -441,6 +450,7 @@ function renderTab() {
   if (unsubUsers && tab !== "equipe") { unsubUsers(); unsubUsers = null; }
   if (tab === "equipe") return renderTeam(main);
   if (tab === "vendas") return renderVendas(main);
+  if (tab === "entregas") return renderEntregas(main);
   const t = TABS[tab];
   main.innerHTML = `<h2>${t.label}</h2>
     <div class="card soon"><div class="i">${t.icon}</div>
@@ -641,15 +651,23 @@ function orderCard(o) {
   </button>`;
 }
 
-/* ----- Nova ordem ----- */
-function orderSheet(preClientId) {
-  let client = preClientId ? data.clients.find(c => c.id === preClientId) : null;
-  const qty = {};
-  const products = data.products.filter(p => p.active !== false);
+/* ----- Nova ordem / editar ordem ----- */
+function orderSheet(preClientId, edit) {
+  let client = null;
+  if (edit) client = data.clients.find(c => c.id === edit.clientId) || { id: edit.clientId, name: edit.clientName, phone: edit.clientPhone, ...(edit.address || {}), regionId: edit.regionId };
+  else if (preClientId) client = data.clients.find(c => c.id === preClientId) || null;
+  const oldQty = {}, oldPrice = {};
+  (edit?.items || []).forEach(i => { oldQty[i.productId] = (oldQty[i.productId] || 0) + i.qty; oldPrice[i.productId] = i.price; });
+  const qty = { ...oldQty };
+  const legacy = (edit?.items || []).filter(i => !data.products.find(p => p.id === i.productId))
+    .map(i => ({ id: i.productId, name: i.name, price: i.price, stock: 0, legacy: true }));
+  const products = [...data.products.filter(p => p.active !== false || oldQty[p.id]), ...legacy];
+  const priceOf = p => oldPrice[p.id] ?? p.price ?? 0;
+  const available = p => (p.stock || 0) + (oldQty[p.id] || 0);
   const regionOpts = sel => `<option value="">Sem região</option>` + data.regions.map(r => `<option value="${r.id}" ${r.id === sel ? "selected" : ""}>${esc(r.name)}</option>`).join("");
 
   const ov = openSheet(`
-    <h3>Nova ordem</h3>
+    <h3>${edit ? `Editar ordem #${edit.number}` : "Nova ordem"}</h3>
     <div class="sheet-msg"></div>
     <label>Cliente</label>
     <div id="ocw"></div>
@@ -663,18 +681,18 @@ function orderSheet(preClientId) {
     <div id="opl">${products.map(p => `
       <div class="prod">
         ${p.photo ? `<img class="thumb" src="${p.photo}" alt="">` : `<div class="thumb">📦</div>`}
-        <div class="info"><b>${esc(p.name)}</b><small>${money(p.price)} · ${p.stock || 0} em estoque</small></div>
-        <div class="stepper" id="st-${p.id}">
+        <div class="info"><b>${esc(p.name)}</b><small>${money(priceOf(p))}${p.legacy ? " · produto apagado" : ` · ${available(p)} disponível`}</small></div>
+        <div class="stepper ${qty[p.id] ? "has" : ""}" id="st-${p.id}">
           <button type="button" data-m="${p.id}">−</button>
-          <input type="number" inputmode="numeric" min="0" value="" placeholder="0" data-q="${p.id}">
+          <input type="number" inputmode="numeric" min="0" value="${qty[p.id] || ""}" placeholder="0" data-q="${p.id}">
           <button type="button" data-p="${p.id}">+</button>
         </div>
       </div>`).join("") || `<div class="empty">Cadastre produtos na aba Produtos primeiro.</div>`}</div>
     <label for="onote">Observação (opcional)</label>
-    <textarea id="onote" placeholder="Ex.: ligar antes, portão azul"></textarea>
+    <textarea id="onote" placeholder="Ex.: ligar antes, portão azul">${esc(edit?.notes)}</textarea>
     <div class="totalbar">
       <div class="row"><span>Total</span><b id="otot" style="font-size:22px">$0.00</b></div>
-      <button class="btn" id="osave">Salvar ordem</button>
+      <button class="btn" id="osave">${edit ? "Salvar alterações" : "Salvar ordem"}</button>
       <button type="button" class="link" data-close>Cancelar</button>
     </div>`);
 
@@ -704,8 +722,13 @@ function orderSheet(preClientId) {
   $("oday").onchange = () => setDay($("oday").value);
   setDay("sab");
   applyClient();
+  if (edit) {
+    $("or").value = edit.regionId || "";
+    $("oday").value = edit.day || "sab";
+    $("odate").value = edit.deliveryDate;
+  }
 
-  const total = () => products.reduce((s, p) => s + (qty[p.id] || 0) * (p.price || 0), 0);
+  const total = () => products.reduce((s, p) => s + (qty[p.id] || 0) * priceOf(p), 0);
   const setQty = (id, n) => {
     n = Math.max(0, Math.floor(Number(n) || 0));
     qty[id] = n;
@@ -714,45 +737,87 @@ function orderSheet(preClientId) {
     st.classList.toggle("has", n > 0);
     $("otot").textContent = money(total());
   };
+  $("otot").textContent = money(total());
   ov.querySelectorAll("[data-m]").forEach(b => b.onclick = () => setQty(b.dataset.m, (qty[b.dataset.m] || 0) - 1));
   ov.querySelectorAll("[data-p]").forEach(b => b.onclick = () => setQty(b.dataset.p, (qty[b.dataset.p] || 0) + 1));
   ov.querySelectorAll("[data-q]").forEach(i => i.oninput = () => setQty(i.dataset.q, i.value));
 
   $("osave").onclick = async () => {
     if (!client) return sheetError(ov, "Escolha o cliente.");
-    const items = products.filter(p => qty[p.id] > 0).map(p => ({ productId: p.id, name: p.name, price: p.price || 0, qty: qty[p.id] }));
+    const items = products.filter(p => qty[p.id] > 0).map(p => ({ productId: p.id, name: p.name, price: priceOf(p), qty: qty[p.id] }));
     if (!items.length) return sheetError(ov, "Escolha pelo menos um produto.");
     if (!$("odate").value) return sheetError(ov, "Escolha a data da entrega.");
-    const short = items.filter(i => i.qty > (products.find(p => p.id === i.productId).stock || 0));
+    const short = items.filter(i => { const p = products.find(p => p.id === i.productId); return !p.legacy && i.qty > available(p); });
     if (short.length && !confirm(`Estoque insuficiente de: ${short.map(i => i.name).join(", ")}.\nSalvar mesmo assim?`)) return;
     const region = data.regions.find(r => r.id === $("or").value);
-    const order = {
+    const fields = {
       clientId: client.id, clientName: client.name, clientPhone: client.phone || "",
       address: { street: client.street || "", apt: client.apt || "", city: client.city || "", state: client.state || "", zip: client.zip || "" },
       regionId: region?.id || "", regionName: region?.name || "",
       day: $("oday").value, deliveryDate: $("odate").value,
       items, total: Math.round(items.reduce((s, i) => s + i.qty * i.price, 0) * 100) / 100,
-      notes: val("onote"), status: "aberta", paid: false,
-      sellerId: me.uid, sellerName: me.name, createdAt: serverTimestamp()
+      notes: val("onote")
     };
     const b = $("osave");
     setBusy(b, true, "Salvando...");
     try {
-      const number = await runTransaction(db, async tx => {
-        const cRef = doc(db, "config", "counter");
-        const cSnap = await tx.get(cRef);
-        const pSnaps = await Promise.all(items.map(i => tx.get(doc(db, "products", i.productId))));
-        const n = (cSnap.exists() ? cSnap.data().orders || 0 : 0) + 1;
-        pSnaps.forEach((s, k) => { if (s.exists()) tx.update(s.ref, { stock: (s.data().stock || 0) - items[k].qty }); });
-        tx.set(cRef, { orders: n }, { merge: true });
-        tx.set(doc(collection(db, "orders")), { ...order, number: n });
-        return n;
-      });
-      orderDate = order.deliveryDate;
-      closeSheet();
-      toast(`Ordem #${number} salva!`);
+      if (edit) {
+        await runTransaction(db, async tx => {
+          const ref = doc(db, "orders", edit.id);
+          const snap = await tx.get(ref);
+          if (!snap.exists() || snap.data().status !== "aberta") throw new Error("Essa ordem não está mais aberta, não dá pra editar.");
+          const prev = {}, now = {};
+          (snap.data().items || []).forEach(i => prev[i.productId] = (prev[i.productId] || 0) + i.qty);
+          items.forEach(i => now[i.productId] = (now[i.productId] || 0) + i.qty);
+          const ids = [...new Set([...Object.keys(prev), ...Object.keys(now)])];
+          const pSnaps = await Promise.all(ids.map(id => tx.get(doc(db, "products", id))));
+          pSnaps.forEach((s, k) => {
+            const diff = (now[ids[k]] || 0) - (prev[ids[k]] || 0);
+            if (s.exists() && diff) tx.update(s.ref, { stock: (s.data().stock || 0) - diff });
+          });
+          tx.update(ref, { ...fields, editedBy: me.name, editedAt: serverTimestamp() });
+        });
+        orderDate = fields.deliveryDate;
+        closeSheet();
+        toast(`Ordem #${edit.number} atualizada.`);
+      } else {
+        const order = { ...fields, status: "aberta", paid: false, sellerId: me.uid, sellerName: me.name, createdAt: serverTimestamp() };
+        const number = await runTransaction(db, async tx => {
+          const cRef = doc(db, "config", "counter");
+          const cSnap = await tx.get(cRef);
+          const pSnaps = await Promise.all(items.map(i => tx.get(doc(db, "products", i.productId))));
+          const n = (cSnap.exists() ? cSnap.data().orders || 0 : 0) + 1;
+          pSnaps.forEach((s, k) => { if (s.exists()) tx.update(s.ref, { stock: (s.data().stock || 0) - items[k].qty }); });
+          tx.set(cRef, { orders: n }, { merge: true });
+          tx.set(doc(collection(db, "orders")), { ...order, number: n });
+          return n;
+        });
+        orderDate = order.deliveryDate;
+        closeSheet();
+        toast(`Ordem #${number} salva!`);
+      }
     } catch (e) { setBusy(b, false); sheetError(ov, errMsg(e)); }
   };
+}
+
+/* ----- Mensagens pro cliente ----- */
+const biz = () => data.settings.businessName || "Delivery da Fazenda";
+const firstName = n => (n || "").trim().split(/\s+/)[0] || "";
+const waLink = (phone, text) => `https://wa.me/${(phone || "").replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
+function payLines() {
+  const s = data.settings, out = [];
+  if (s.zelle) out.push(`Zelle: ${s.zelle}`);
+  if (s.venmo) out.push(`Venmo: ${s.venmo}`);
+  return out;
+}
+function summaryText(o) {
+  const pay = payLines();
+  return `Olá, ${firstName(o.clientName)}! Aqui é ${biz()}.\n` +
+    `Seu pedido #${o.number} para *${fmtDateLong(o.deliveryDate)}*:\n\n` +
+    (o.items || []).map(i => `${i.qty}x ${i.name}: ${money(i.qty * i.price)}`).join("\n") +
+    `\n\n*Total: ${money(o.total)}*\n` +
+    (pay.length ? `\nFormas de pagamento:\n${pay.join("\n")}\nou dinheiro na entrega.\n` : "") +
+    `\nObrigado pela preferência!`;
 }
 
 /* ----- Detalhe da ordem ----- */
@@ -770,17 +835,44 @@ function orderDetail(o) {
     <div class="kv"><span>Região</span><b>${esc(o.regionName || "—")}</b></div>
     <div class="kv"><span>Entrega</span><b>${fmtDate(o.deliveryDate)}</b></div>
     <div class="kv"><span>Vendedor</span><b>${esc(o.sellerName || "—")}</b></div>
-    <div class="kv"><span>Pagamento</span><b style="color:${o.paid ? "var(--green)" : "var(--red)"}">${o.paid ? "Pago" + (o.paymentMethod ? ` (${esc(o.paymentMethod)})` : "") : "Não pago"}</b></div>
+    <div class="kv"><span>Pagamento</span><b style="color:${o.paid ? "var(--green)" : "var(--red)"}">${o.paid ? "Pago" : "Não pago"}${o.paymentMethod ? ` · ${esc(PAY[o.paymentMethod] || o.paymentMethod)}` : ""}</b></div>
     ${o.notes ? `<div class="kv"><span>Observação</span><b style="text-align:right">${esc(o.notes)}</b></div>` : ""}
+    ${o.status === "entregue" ? `
+      <div class="kv"><span>Entregue por</span><b>${esc(o.deliveredBy || "—")}</b></div>
+      <div class="kv"><span>Como</span><b>${o.deliveryMode === "local" ? "Deixado no local" : "Em mãos"}</b></div>
+      ${o.hasDeliveryPhoto ? `<div id="odp"><div class="spinner"></div></div>` : ""}` : ""}
     <h4>Produtos</h4>
     <table><tbody>${(o.items || []).map(i => `<tr><td>${i.qty}x ${esc(i.name)}</td><td class="n">${money(i.qty * i.price)}</td></tr>`).join("")}
       <tr><td><b>Total</b></td><td class="n"><b>${money(o.total)}</b></td></tr></tbody></table>
+    ${o.clientPhone && o.status !== "cancelada" ? `<a class="btn" href="${waLink(o.clientPhone, summaryText(o))}" target="_blank" rel="noopener">📋 Enviar resumo pro cliente</a>` : ""}
     <div class="actions">
       <a class="btn ghost" href="${mapLink(addr)}" target="_blank" rel="noopener">🗺️ Mapa</a>
       ${o.clientPhone ? `<a class="btn ghost" href="https://wa.me/${o.clientPhone.replace(/\D/g, "")}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ""}
     </div>
+    ${o.status === "aberta" && can("admin", "vendedor") ? `<button class="btn ghost" id="oedit">✏️ Editar ordem</button>` : ""}
+    ${o.status === "aberta" && can("admin", "entregador") ? `<button class="btn ghost" id="odeliver">✅ Dar baixa na entrega</button>` : ""}
+    ${o.status === "entregue" && !o.paid && can("admin") ? `<button class="btn danger" id="oreopen">Desfazer baixa</button>` : ""}
     ${o.status === "aberta" && can("admin", "vendedor") ? `<button class="btn danger" id="ocancel">Cancelar ordem</button>` : ""}
     <button type="button" class="link" data-close>Fechar</button>`);
+
+  if (o.hasDeliveryPhoto && o.status === "entregue") {
+    getDoc(doc(db, "deliveryPhotos", o.id)).then(s => {
+      const box = $("odp");
+      if (box) box.innerHTML = s.exists() ? `<img class="big-photo" src="${s.data().data}" alt="Foto da entrega">` : "";
+    }).catch(() => { const box = $("odp"); if (box) box.innerHTML = ""; });
+  }
+  const eb = $("oedit");
+  if (eb) eb.onclick = () => orderSheet(null, o);
+  const db2 = $("odeliver");
+  if (db2) db2.onclick = () => deliverySheet(o);
+  const rb = $("oreopen");
+  if (rb) rb.onclick = async () => {
+    if (!confirm(`Voltar a ordem #${o.number} para "aberta"?`)) return;
+    try {
+      await updateDoc(doc(db, "orders", o.id), { status: "aberta", deliveryMode: "", paymentMethod: "", deliveredBy: "", reopenedBy: me.name, reopenedAt: serverTimestamp() });
+      closeSheet(); toast("Baixa desfeita.");
+    } catch (e) { sheetError(ov, errMsg(e)); }
+  };
   const cb = $("ocancel");
   if (cb) cb.onclick = async () => {
     if (!confirm(`Cancelar a ordem #${o.number}? Os produtos voltam para o estoque.`)) return;
@@ -954,6 +1046,348 @@ function regionSheet(r) {
     if (!confirm(`Apagar a região ${r.name}?`)) return;
     try { await deleteDoc(doc(db, "regions", r.id)); closeSheet(); toast("Região apagada."); }
     catch (e) { sheetError(ov, errMsg(e)); }
+  };
+}
+
+/* ===== ENTREGAS ===== */
+const PAY = { cash: "Cash", zelle: "Zelle", venmo: "Venmo", pendente: "Ainda não pagou" };
+const DOW_LONG = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+const fmtDateLong = s => { if (!s) return ""; const d = parseISO(s); return `${DOW_LONG[d.getDay()]}, ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`; };
+let entDate = null, entRegion = "all", route = null;
+const geoCache = {};
+let lastGeo = 0;
+
+try { route = JSON.parse(localStorage.getItem("df-route") || "null"); } catch { route = null; }
+function saveRoute() { try { localStorage.setItem("df-route", JSON.stringify(route)); } catch {} }
+
+// Distância em linha reta (milhas) e estimativa de tempo de carro
+function miles(a, b) {
+  const R = 3958.8, toR = x => x * Math.PI / 180;
+  const dLat = toR(b.lat - a.lat), dLng = toR(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a.lat)) * Math.cos(toR(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const roadMiles = (a, b) => miles(a, b) * 1.3;
+const driveMin = mi => Math.round(mi / 25 * 60 + 2);
+
+// Ordem das paradas: vizinho mais próximo + melhoria 2-opt
+function planRoute(origin, pts) {
+  const rest = [...pts], path = [];
+  let cur = origin;
+  while (rest.length) {
+    let bi = 0, bd = Infinity;
+    rest.forEach((p, i) => { const d = miles(cur, p); if (d < bd) { bd = d; bi = i; } });
+    cur = rest.splice(bi, 1)[0];
+    path.push(cur);
+  }
+  const len = arr => arr.reduce((s, p, i) => s + miles(i ? arr[i - 1] : origin, p), 0);
+  let best = path, bestLen = len(best), improved = true, guard = 0;
+  while (improved && guard++ < 50) {
+    improved = false;
+    for (let i = 0; i < best.length - 1; i++) {
+      for (let k = i + 1; k < best.length; k++) {
+        const cand = [...best.slice(0, i), ...best.slice(i, k + 1).reverse(), ...best.slice(k + 1)];
+        const l = len(cand);
+        if (l < bestLen - 1e-9) { best = cand; bestLen = l; improved = true; }
+      }
+    }
+  }
+  return best;
+}
+
+function getPosition(maxAge = 60000) {
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error("Esse celular não permite pegar a localização."));
+    navigator.geolocation.getCurrentPosition(
+      p => res({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      e => rej(new Error(e.code === 1 ? "Permita o acesso à localização para o app (nas configurações do navegador)." : "Não consegui pegar sua localização. Tente de novo.")),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: maxAge }
+    );
+  });
+}
+
+// Converte endereço em coordenadas (OpenStreetMap), guardando no cadastro do cliente
+async function geocodeOrder(o) {
+  const a = o.address || {};
+  const line = addressLine(a);
+  const c = data.clients.find(c => c.id === o.clientId);
+  if (c?.lat && c.geoAddr === line) return { lat: c.lat, lng: c.lng };
+  if (geoCache[line] !== undefined) return geoCache[line];
+  const tries = [
+    { street: a.street, city: a.city, state: a.state, postalcode: a.zip },
+    { street: a.street, postalcode: a.zip },
+    { q: line }
+  ];
+  let found = null;
+  for (const t of tries) {
+    const wait = 1100 - (Date.now() - lastGeo);
+    if (wait > 0) await new Promise(r => setTimeout(r, wait));
+    lastGeo = Date.now();
+    const params = new URLSearchParams({ format: "json", limit: "1", countrycodes: "us" });
+    Object.entries(t).forEach(([k, v]) => { if (v) params.set(k, v); });
+    try {
+      const r = await fetch("https://nominatim.openstreetmap.org/search?" + params);
+      const j = await r.json();
+      if (j[0]) { found = { lat: Number(j[0].lat), lng: Number(j[0].lon) }; break; }
+    } catch {}
+  }
+  geoCache[line] = found;
+  if (found && c) updateDoc(doc(db, "clients", c.id), { lat: found.lat, lng: found.lng, geoAddr: line }).catch(() => {});
+  return found;
+}
+
+function renderEntregas(main) {
+  main.innerHTML = `<h2>Entregas</h2><div id="el"></div>`;
+  drawEntregas();
+}
+
+function entKey() { return `${entDate}|${entRegion}`; }
+
+function drawEntregas() {
+  const el = $("el");
+  if (!el) return;
+  if (!data.loaded.orders) return el.innerHTML = loading;
+  const live = data.orders.filter(o => o.status !== "cancelada");
+  const dates = [...new Set(live.map(o => o.deliveryDate))].sort();
+  const t = today();
+  if (!dates.includes(entDate)) entDate = dates.includes(t) ? t : (dates.find(d => d >= t) || dates[dates.length - 1] || null);
+  if (!entDate) return el.innerHTML = `<div class="empty">Nenhuma entrega marcada ainda.</div>`;
+  const dayOrders = live.filter(o => o.deliveryDate === entDate);
+  const regions = [...new Set(dayOrders.map(o => o.regionName || "Sem região"))].sort();
+  if (entRegion !== "all" && !regions.includes(entRegion)) entRegion = "all";
+  const inRegion = dayOrders.filter(o => entRegion === "all" || (o.regionName || "Sem região") === entRegion);
+  let pending = inRegion.filter(o => o.status === "aberta");
+  const done = inRegion.filter(o => o.status === "entregue");
+
+  const hasRoute = route && route.key === entKey();
+  const legs = {};
+  if (hasRoute) {
+    const pos = {};
+    pending.sort((a, b) => {
+      const ia = route.ids.indexOf(a.id), ib = route.ids.indexOf(b.id);
+      return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib);
+    });
+    let prev = route.origin;
+    pending.forEach(o => {
+      const p = route.coords[o.id];
+      if (p && prev) { const mi = roadMiles(prev, p); legs[o.id] = { mi, min: driveMin(mi) }; prev = p; }
+    });
+  } else {
+    pending.sort((a, b) => (a.address?.zip || "").localeCompare(b.address?.zip || "") || (a.clientName || "").localeCompare(b.clientName || ""));
+  }
+  const totalMi = Object.values(legs).reduce((s, l) => s + l.mi, 0);
+  const totalMin = Object.values(legs).reduce((s, l) => s + l.min, 0) + pending.length * 5;
+
+  el.innerHTML = `
+    <div class="chips">${dates.map(d => `<button class="chip ${d === entDate ? "on" : ""}" data-ed="${d}">${fmtDate(d)}</button>`).join("")}</div>
+    ${regions.length > 1 ? `<div class="chips">
+      <button class="chip ${entRegion === "all" ? "on" : ""}" data-er="all">Todas as regiões</button>
+      ${regions.map(r => `<button class="chip ${r === entRegion ? "on" : ""}" data-er="${esc(r)}">${esc(r)}</button>`).join("")}
+    </div>` : ""}
+    <div class="summary">
+      <div><small>Faltam</small><b>${pending.length}</b></div>
+      <div><small>Entregues</small><b>${done.length}</b></div>
+      <div><small>${hasRoute ? "Rota" : "Total"}</small><b>${hasRoute ? `${totalMi.toFixed(0)} mi` : money(inRegion.reduce((s, o) => s + (o.total || 0), 0))}</b></div>
+    </div>
+    ${pending.length ? `
+      <button class="btn" id="eroute" style="margin-top:0">📍 ${hasRoute ? "Refazer rota pela minha localização" : "Organizar rota pela minha localização"}</button>
+      ${hasRoute ? `<p class="note">Rota com ${pending.length} parada${pending.length > 1 ? "s" : ""}, cerca de ${Math.floor(totalMin / 60) ? Math.floor(totalMin / 60) + "h" : ""}${totalMin % 60}min contando 5 min por entrega. Distâncias aproximadas.</p>
+        <a class="btn ghost" id="egmaps" target="_blank" rel="noopener">🗺️ Abrir rota no Google Maps</a>` : ""}
+      <h4>Paradas</h4>
+      <div class="list">${pending.map((o, i) => stopCard(o, i + 1, legs[o.id])).join("")}</div>` :
+      `<div class="card soon"><div class="i">🎉</div><p><b>Todas as entregas desse dia foram feitas!</b></p></div>`}
+    ${done.length ? `<h4>Entregues</h4><div class="list">${done.map(o => `
+      <button class="item" data-o="${o.id}">
+        <div class="thumb">✅</div>
+        <div class="info"><b>#${o.number} · ${esc(o.clientName)}</b><small>${o.deliveryMode === "local" ? "Deixado no local" : "Em mãos"} · ${esc(PAY[o.paymentMethod] || "")}${o.deliveredBy ? " · " + esc(o.deliveredBy) : ""}</small></div>
+        <div class="right"><b>${money(o.total)}</b><span class="badge ${o.paid ? "" : "red"}">${o.paid ? "Pago" : "Não pago"}</span></div>
+      </button>`).join("")}</div>` : ""}`;
+
+  el.querySelectorAll("[data-ed]").forEach(b => b.onclick = () => { entDate = b.dataset.ed; drawEntregas(); });
+  el.querySelectorAll("[data-er]").forEach(b => b.onclick = () => { entRegion = b.dataset.er; drawEntregas(); });
+  el.querySelectorAll("[data-o]").forEach(b => b.onclick = () => orderDetail(data.orders.find(o => o.id === b.dataset.o)));
+  el.querySelectorAll("[data-bx]").forEach(b => b.onclick = () => deliverySheet(data.orders.find(o => o.id === b.dataset.bx)));
+  el.querySelectorAll("[data-av]").forEach(b => b.onclick = () => notifyArrival(data.orders.find(o => o.id === b.dataset.av), b));
+  el.querySelectorAll("[data-hp]").forEach(b => b.onclick = () => toggleHousePhoto(b));
+  const rb = $("eroute");
+  if (rb) rb.onclick = () => buildRoute(rb, pending);
+  const gm = $("egmaps");
+  if (gm) {
+    const stops = pending.map(o => route.coords[o.id] ? `${route.coords[o.id].lat},${route.coords[o.id].lng}` : addressLine(o.address || {})).slice(0, 10);
+    const dest = stops[stops.length - 1];
+    const wps = stops.slice(0, -1);
+    gm.href = `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(dest)}${wps.length ? "&waypoints=" + encodeURIComponent(wps.join("|")) : ""}`;
+  }
+}
+
+function stopCard(o, n, leg) {
+  const items = (o.items || []).map(i => `${i.qty}x ${esc(i.name)}`).join(", ");
+  const c = data.clients.find(c => c.id === o.clientId);
+  const nav = route?.coords?.[o.id] ? `${route.coords[o.id].lat},${route.coords[o.id].lng}` : addressLine(o.address || {});
+  return `<div class="card stop">
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <div class="num">${n}</div>
+      <div style="flex:1;min-width:0">
+        <button class="stop-name" data-o="${o.id}">#${o.number} · ${esc(o.clientName)}</button>
+        <div class="note" style="margin:2px 0 0">${esc(addressLine(o.address || {}))}</div>
+        ${leg ? `<div class="note" style="margin:2px 0 0">🚗 ${leg.mi.toFixed(1)} mi · ~${leg.min} min</div>` : ""}
+        <div style="margin-top:8px;font-size:15px">${items}</div>
+        <div style="margin-top:4px"><b>${money(o.total)}</b> ${o.notifiedAt ? `<span class="badge">Avisado</span>` : ""}</div>
+        ${o.notes ? `<div class="msg" style="background:var(--amber-l);color:var(--amber);margin:8px 0 0;padding:8px 10px">📝 ${esc(o.notes)}</div>` : ""}
+        ${c?.hasPhoto ? `<button class="link" style="text-align:left;padding:8px 0 0" data-hp="${c.id}">🏠 Ver foto da casa</button><div id="hp-${c.id}"></div>` : ""}
+      </div>
+    </div>
+    <div class="actions">
+      <a class="small-btn ghost" style="text-align:center;text-decoration:none" href="https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(nav)}" target="_blank" rel="noopener">🧭 Ir</a>
+      ${o.clientPhone ? `<button class="small-btn ghost" data-av="${o.id}">💬 Avisar</button>` : ""}
+      <button class="small-btn" data-bx="${o.id}">✅ Baixa</button>
+    </div>
+  </div>`;
+}
+
+async function toggleHousePhoto(btn) {
+  const id = btn.dataset.hp, box = $("hp-" + id);
+  if (!box) return;
+  if (box.innerHTML) { box.innerHTML = ""; btn.textContent = "🏠 Ver foto da casa"; return; }
+  box.innerHTML = loading;
+  try {
+    const s = await getDoc(doc(db, "clientPhotos", id));
+    box.innerHTML = s.exists() ? `<img class="big-photo" src="${s.data().data}" alt="Foto da casa">` : `<p class="note">Sem foto.</p>`;
+    btn.textContent = "🏠 Esconder foto";
+  } catch (e) { box.innerHTML = `<p class="note">${esc(errMsg(e))}</p>`; }
+}
+
+async function buildRoute(btn, pending) {
+  setBusy(btn, true, "Pegando sua localização...");
+  let origin;
+  try { origin = await getPosition(0); }
+  catch (e) { setBusy(btn, false); return toast(e.message); }
+  const pts = [], missing = [];
+  for (let i = 0; i < pending.length; i++) {
+    btn.textContent = `Localizando endereços ${i + 1} de ${pending.length}...`;
+    const g = await geocodeOrder(pending[i]);
+    if (g) pts.push({ id: pending[i].id, ...g }); else missing.push(pending[i]);
+  }
+  const ordered = planRoute(origin, pts);
+  const coords = {};
+  pts.forEach(p => coords[p.id] = { lat: p.lat, lng: p.lng });
+  route = { key: entKey(), ids: [...ordered.map(p => p.id), ...missing.map(o => o.id)], origin, coords, at: Date.now() };
+  saveRoute();
+  drawEntregas();
+  if (missing.length) toast(`${missing.length} endereço${missing.length > 1 ? "s" : ""} não encontrado${missing.length > 1 ? "s" : ""} no mapa, ficou no fim da lista.`);
+  else toast("Rota organizada!");
+}
+
+async function notifyArrival(o, btn) {
+  if (!o) return;
+  let minutes = null;
+  const dest = route?.coords?.[o.id];
+  if (dest) {
+    setBusy(btn, true, "...");
+    try { const here = await getPosition(30000); minutes = Math.max(5, Math.ceil(driveMin(roadMiles(here, dest)) / 5) * 5); } catch {}
+    setBusy(btn, false);
+  }
+  if (minutes == null) {
+    const ans = prompt("Em quantos minutos você chega?", "15");
+    if (ans === null) return;
+    minutes = Math.max(1, parseInt(ans, 10) || 15);
+  }
+  const text = `Olá, ${firstName(o.clientName)}! Aqui é o entregador do ${biz()}. Estou a caminho com o seu pedido #${o.number} e chego em aproximadamente ${minutes} minutos.`;
+  window.open(waLink(o.clientPhone, text), "_blank");
+  updateDoc(doc(db, "orders", o.id), { notifiedAt: serverTimestamp(), notifiedEta: minutes }).catch(() => {});
+}
+
+function deliveredText(o, mode, pay) {
+  const p = payLines();
+  let t = `Olá, ${firstName(o.clientName)}! Aqui é o ${biz()}.\n`;
+  t += mode === "local"
+    ? `Acabei de deixar sua mercadoria no local combinado. A foto de onde deixei está aqui.\n`
+    : `Acabei de entregar sua mercadoria. Obrigado!\n`;
+  t += `\nPedido #${o.number}\n` + (o.items || []).map(i => `${i.qty}x ${i.name}`).join("\n") + `\n*Total: ${money(o.total)}*\n`;
+  if (pay === "cash") t += `\nPagamento recebido em dinheiro. Muito obrigado!`;
+  else {
+    t += pay === "zelle" || pay === "venmo"
+      ? `\nAssim que o pagamento por ${PAY[pay]} cair, confirmamos por aqui.`
+      : `\nPor favor, faça o pagamento por:\n${p.length ? p.join("\n") : "Zelle ou Venmo"}`;
+    t += `\nObrigado!`;
+  }
+  return t;
+}
+
+function deliverySheet(o) {
+  if (!o) return;
+  const c = data.clients.find(c => c.id === o.clientId);
+  let photo = null;
+  const ov = openSheet(`
+    <h3>Dar baixa · #${o.number}</h3>
+    <p class="note" style="margin-top:0">${esc(o.clientName)} · <b>${money(o.total)}</b></p>
+    <div class="sheet-msg"></div>
+    <label>Como foi entregue?</label>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="dm" value="maos"><span>🤝 Em mãos</span></label>
+      <label class="opt"><input type="radio" name="dm" value="local"><span>📦 Deixei no local</span></label>
+    </div>
+    <div id="dphw" style="display:none">
+      <label>Foto de onde deixou <span style="color:var(--red)">(obrigatória)</span></label>
+      ${photoPicker("dph", null, "📷")}
+      ${c ? `<div class="switch"><span>Usar também como foto da casa</span><input type="checkbox" id="dhouse" ${c.hasPhoto ? "" : "checked"}></div>` : ""}
+    </div>
+    <label>Pagamento</label>
+    <div class="opts">
+      ${Object.entries(PAY).map(([k, v]) => `<label class="opt"><input type="radio" name="dp" value="${k}"><span>${k === "cash" ? "💵 Cash recebido" : k === "pendente" ? "⏳ Ainda não pagou" : (k === "zelle" ? "🏦 " : "📱 ") + v}</span></label>`).join("")}
+    </div>
+    <p class="note">Zelle e Venmo o contador confere depois na aba Contas.</p>
+    ${c && !c.hasPhoto ? `<p class="note">Esse cliente ainda não tem foto da casa.</p>` : ""}
+    <button class="btn" id="dsave">Confirmar entrega</button>
+    <button type="button" class="link" data-close>Cancelar</button>`);
+  wirePhoto("dph", 1000, 0.6, d => photo = d);
+  ov.querySelectorAll("input[name=dm]").forEach(r => r.onchange = () => { $("dphw").style.display = r.value === "local" && r.checked ? "block" : "none"; });
+
+  $("dsave").onclick = async () => {
+    const mode = ov.querySelector("input[name=dm]:checked")?.value;
+    const pay = ov.querySelector("input[name=dp]:checked")?.value;
+    if (!mode) return sheetError(ov, "Escolha como foi entregue.");
+    if (mode === "local" && !photo) return sheetError(ov, "Tire a foto de onde deixou a mercadoria.");
+    if (!pay) return sheetError(ov, "Escolha a forma de pagamento.");
+    const b = $("dsave");
+    setBusy(b, true, "Salvando...");
+    try {
+      const usePhoto = mode === "local" ? photo : null;
+      if (usePhoto) await setDoc(doc(db, "deliveryPhotos", o.id), { data: usePhoto, at: serverTimestamp(), by: me.name });
+      if (usePhoto && c && $("dhouse")?.checked) {
+        await setDoc(doc(db, "clientPhotos", c.id), { data: usePhoto, updatedAt: serverTimestamp(), by: me.name });
+        await updateDoc(doc(db, "clients", c.id), { hasPhoto: true });
+      }
+      await updateDoc(doc(db, "orders", o.id), {
+        status: "entregue", deliveryMode: mode, hasDeliveryPhoto: !!usePhoto,
+        paymentMethod: pay, deliveredBy: me.name, deliveredById: me.uid, deliveredAt: serverTimestamp()
+      });
+      afterDelivery(o, mode, pay, usePhoto);
+    } catch (e) { setBusy(b, false); sheetError(ov, errMsg(e)); }
+  };
+}
+
+async function afterDelivery(o, mode, pay, photo) {
+  const text = deliveredText(o, mode, pay);
+  let file = null;
+  if (photo && navigator.canShare) {
+    try {
+      const blob = await (await fetch(photo)).blob();
+      const f = new File([blob], `entrega-${o.number}.jpg`, { type: "image/jpeg" });
+      if (navigator.canShare({ files: [f] })) file = f;
+    } catch {}
+  }
+  const ov = openSheet(`
+    <div class="soon" style="padding:10px 0"><div class="i">✅</div><h3>Ordem #${o.number} entregue!</h3></div>
+    <p class="note" style="margin-top:0">Agora mande a mensagem pro cliente:</p>
+    <div class="card" style="white-space:pre-wrap;font-size:15px;margin-top:10px">${esc(text)}</div>
+    ${file ? `<button class="btn" id="ashare">📷 Enviar com a foto</button>
+      <p class="note">Escolha o WhatsApp e depois o contato de ${esc(firstName(o.clientName))}.</p>` : ""}
+    ${o.clientPhone ? `<a class="btn ${file ? "ghost" : ""}" href="${waLink(o.clientPhone, text)}" target="_blank" rel="noopener">💬 Enviar ${file ? "só o texto" : "no WhatsApp"}</a>` : ""}
+    <button type="button" class="link" data-close>Fechar</button>`);
+  const sb = ov.querySelector("#ashare");
+  if (sb) sb.onclick = async () => {
+    try { await navigator.share({ files: [file], text }); } catch {}
   };
 }
 
